@@ -44,8 +44,13 @@ export const useWallet = () => {
   const connectWallet = useCallback(async (type: WalletProvider) => {
     try {
       const provider = getProvider(type);
+      
+      // Sur mobile, getProvider retourne null après la redirection
       if (!provider) {
-        alert(`${type} wallet not found. Please install the extension.`);
+        // Ne pas afficher d'alerte sur mobile
+        if (!(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent))) {
+          alert(`${type} wallet not found. Please install the extension.`);
+        }
         return;
       }
 
