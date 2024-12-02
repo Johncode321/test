@@ -1,3 +1,5 @@
+// src/components/SignerPanel.tsx
+
 import { useEffect } from 'react';
 import { WalletConnection } from '../types/wallet';
 import { Button } from './Button';
@@ -5,7 +7,7 @@ import { MessageInput } from './MessageInput';
 import { SignatureDisplay } from './SignatureDisplay';
 import { WalletInfo } from './WalletInfo';
 import { MessageCircle, Wallet, PenSquare, ExternalLink } from 'lucide-react';
-import { isMobileDevice } from '../utils/wallet';
+import { isInAppBrowser } from '../utils/wallet';
 
 interface SignerPanelProps {
   connection: WalletConnection;
@@ -28,18 +30,17 @@ export const SignerPanel = ({
   onSign,
   onCopySignature,
 }: SignerPanelProps) => {
-  const isMobile = isMobileDevice();
+  const inAppBrowser = isInAppBrowser();
   const isConnected = !!connection.publicKey;
 
-  // Log des changements de connexion pour le debug
   useEffect(() => {
     console.log('Connection state changed:', {
       isConnected,
       providerType: connection.providerType,
       publicKey: connection.publicKey?.toBase58(),
-      isMobile
+      inAppBrowser
     });
-  }, [connection, isConnected, isMobile]);
+  }, [connection, isConnected, inAppBrowser]);
 
   return (
     <div className="w-full max-w-md bg-gray-800/50 backdrop-blur-lg p-8 rounded-2xl border border-gray-700 shadow-xl">
@@ -51,9 +52,9 @@ export const SignerPanel = ({
             </div>
             <h1 className="text-2xl font-bold text-white mb-2">Solana Message Signer</h1>
             <p className="text-gray-400 text-sm">
-              {isMobile 
-                ? "Open in your preferred wallet"
-                : "Choose your preferred wallet to continue"}
+              {inAppBrowser 
+                ? "Connect with your wallet"
+                : "Open in your preferred wallet"}
             </p>
           </div>
           
@@ -62,12 +63,12 @@ export const SignerPanel = ({
             onClick={() => onConnect('phantom')}
             className="bg-gradient-to-r from-purple-600 to-purple-700 flex items-center justify-center gap-2"
           >
-            {isMobile ? (
+            {!inAppBrowser ? (
               <>
                 Open in Phantom <ExternalLink size={16} />
               </>
             ) : (
-              'Connect Phantom'
+              'Connect with Phantom'
             )}
           </Button>
           
@@ -76,12 +77,12 @@ export const SignerPanel = ({
             onClick={() => onConnect('solflare')}
             className="bg-gradient-to-r from-orange-500 to-orange-600 flex items-center justify-center gap-2"
           >
-            {isMobile ? (
+            {!inAppBrowser ? (
               <>
                 Open in Solflare <ExternalLink size={16} />
               </>
             ) : (
-              'Connect Solflare'
+              'Connect with Solflare'
             )}
           </Button>
         </div>
