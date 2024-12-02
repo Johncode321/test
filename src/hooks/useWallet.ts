@@ -3,6 +3,29 @@ import { PublicKey } from '@solana/web3.js';
 import { WalletConnection, WalletProvider } from '../types/wallet';
 import { getProvider } from '../utils/wallet';
 
+// Définition du type PhantomProvider
+type DisplayEncoding = 'utf8' | 'hex';
+type PhantomEvent = 'connect' | 'disconnect' | 'accountChanged';
+type PhantomRequestMethod =
+  | 'connect'
+  | 'disconnect'
+  | 'signAndSendTransaction'
+  | 'signTransaction'
+  | 'signAllTransactions'
+  | 'signMessage';
+
+interface PhantomProvider {
+  publicKey: PublicKey | null;
+  isConnected: boolean | null;
+  signMessage: (message: Uint8Array | string, display?: DisplayEncoding) => Promise<any>;
+  connect: (opts?: Partial<{ onlyIfTrusted: boolean }>) => Promise<{ publicKey: PublicKey }>;
+  disconnect: () => Promise<void>;
+  on: (event: PhantomEvent, handler: (args: any) => void) => void;
+  request: (method: PhantomRequestMethod, params: any) => Promise<unknown>;
+  removeAllListeners?: (event: PhantomEvent) => void;
+  removeListener: (event: PhantomEvent, handler: (args: any) => void) => void;
+}
+
 export const useWallet = () => {
   const [connection, setConnection] = useState<WalletConnection>({
     provider: null,
@@ -46,24 +69,58 @@ export const useWallet = () => {
     if (!connection.provider || !connection.providerType) return;
 
     try {
-      // Réinitialiser d'abord l'état local
-      updateConnectionState(null, null, null);
-
       if (connection.providerType === 'phantom') {
+        const phantom = window.phantom?.solana as PhantomProvider;
+        
         try {
-          // Forcer la déconnexion de Phantom
-          await connection.provider.request({ 
-            method: "disconnect" 
-          });
+          // Déconnexion directe avec le provider global Phantom
+          if (phantom?.isConnected) {
+            await phantom.request({
+              method: "disconnect",
+              params: {}
+            });
+            await phantom.disconnect();
+          }
         } catch (e) {
-          console.error('Error disconnecting Phantom:', e);
+          console.error('Phantom global provider disconnect error:', e);
         }
+
+        try {
+          // Déconnexion via le provider stocké dans connection
+          if (connection.provider.isConnected) {
+            await connection.provider.request({
+              method: "disconnect",
+              params: {}
+            });
+            await connection.provider.disconnect();
+          }
+        } catch (e) {
+          console.error('Stored provider disconnect error:', e);
+        }
+        
+        // S'assurer que les listeners sont retirés
+        window.phantom?.solana?.removeAllListeners?.('disconnect');
+        window.phantom?.solana?.removeAllListeners?.('accountChanged');
+        connection.provider.removeAllListeners?.('disconnect');
+        connection.provider.removeAllListeners?.('accountChanged');
       } else {
         // Pour Solflare et autres wallets
         await connection.provider.disconnect();
       }
+
+      // Réinitialiser l'état
+      updateConnectionState(null, null, null);
+      
+      // Recharger la page pour s'assurer d'un état propre
+      setTimeout(() => {
+        window.location.reload();
+      }, 50);
+      
     } catch (error) {
       console.error("Error disconnecting:", error);
+      // Forcer la réinitialisation même en cas d'erreur
+      updateConnectionState(null, null, null);
+      window.location.reload();
     }
   }, [connection.provider, connection.providerType, updateConnectionState]);
 
