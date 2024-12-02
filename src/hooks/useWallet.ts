@@ -1,6 +1,4 @@
-// src/hooks/useWallet.ts
-
-import { useState, useEffect, useCallback } from 'react';
+\import { useState, useEffect, useCallback } from 'react';
 import { PublicKey } from '@solana/web3.js';
 import { WalletConnection, WalletProvider } from '../types/wallet';
 import { getProvider, isMobileDevice, handleMobileRedirect } from '../utils/wallet';
