@@ -10,84 +10,86 @@ export const useWallet = () => {
     providerType: null
   });
 
-  const connectWallet = useCallback(async (type: WalletProvider) => {
-    const provider = getProvider(type);
-    if (!provider) {
-      alert(`${type} wallet not found. Please install the extension.`);
-      return;
-    }
+  const updateConnectionState = useCallback((provider: any, publicKey: PublicKey | null, type: WalletProvider | null) => {
+    setConnection({
+      provider,
+      publicKey,
+      providerType: type
+    });
+  }, []);
 
+  const connectWallet = useCallback(async (type: WalletProvider) => {
     try {
-      // Tenter de se connecter et obtenir la clé publique
+      const provider = getProvider(type);
+      if (!provider) {
+        alert(`${type} wallet not found. Please install the extension.`);
+        return;
+      }
+
+      // Vérifier si le wallet est déjà connecté
+      if (provider.isConnected && provider.publicKey) {
+        updateConnectionState(provider, provider.publicKey, type);
+        return;
+      }
+
+      // Mettre à jour le provider immédiatement
+      updateConnectionState(provider, null, type);
+
+      // Attendre la connexion
       const response = await provider.connect();
       
-      // Mise à jour immédiate et complète de l'état
-      setConnection({
-        provider,
-        publicKey: response.publicKey,
-        providerType: type
-      });
+      // Mettre à jour avec la clé publique une fois connecté
+      if (response?.publicKey) {
+        updateConnectionState(provider, response.publicKey, type);
+      }
     } catch (error) {
       console.error(`Error connecting to ${type}:`, error);
-      // En cas d'erreur, réinitialiser l'état
-      setConnection({
-        provider: null,
-        publicKey: null,
-        providerType: null
-      });
+      updateConnectionState(null, null, null);
     }
-  }, []);
+  }, [updateConnectionState]);
 
   const disconnectWallet = useCallback(async () => {
     if (!connection.provider) return;
-    
+
     try {
       await connection.provider.disconnect();
-      setConnection({
-        provider: null,
-        publicKey: null,
-        providerType: null
-      });
+      updateConnectionState(null, null, null);
     } catch (error) {
       console.error("Error disconnecting:", error);
     }
-  }, [connection.provider]);
+  }, [connection.provider, updateConnectionState]);
 
   useEffect(() => {
-    if (!connection.provider) return;
+    const provider = connection.provider;
+    if (!provider) return;
 
     const handleAccountChanged = (publicKey: PublicKey | null) => {
-      setConnection(prev => ({
-        ...prev,
-        publicKey: publicKey
-      }));
+      updateConnectionState(provider, publicKey, connection.providerType);
+    };
+
+    const handleConnect = (publicKey: PublicKey) => {
+      updateConnectionState(provider, publicKey, connection.providerType);
     };
 
     const handleDisconnect = () => {
-      setConnection({
-        provider: null,
-        publicKey: null,
-        providerType: null
-      });
+      updateConnectionState(null, null, null);
     };
 
-    // Ajouter les écouteurs d'événements
-    connection.provider.on('accountChanged', handleAccountChanged);
-    connection.provider.on('disconnect', handleDisconnect);
+    provider.on('connect', handleConnect);
+    provider.on('disconnect', handleDisconnect);
+    provider.on('accountChanged', handleAccountChanged);
 
-    // Vérifier si nous avons déjà une connexion active
-    if (connection.provider.isConnected) {
-      connection.provider.publicKey && handleAccountChanged(connection.provider.publicKey);
+    // Si déjà connecté, mettre à jour l'état
+    if (provider.isConnected && provider.publicKey) {
+      handleConnect(provider.publicKey);
     }
 
-    // Nettoyage lors du démontage
     return () => {
-      if (connection.provider) {
-        connection.provider.removeListener('accountChanged', handleAccountChanged);
-        connection.provider.removeListener('disconnect', handleDisconnect);
-      }
+      provider.removeListener('connect', handleConnect);
+      provider.removeListener('disconnect', handleDisconnect);
+      provider.removeListener('accountChanged', handleAccountChanged);
     };
-  }, [connection.provider]);
+  }, [connection.provider, connection.providerType, updateConnectionState]);
 
   return {
     connection,
