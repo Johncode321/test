@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { PublicKey } from '@solana/web3.js';
 import { WalletConnection, WalletProvider } from '../types/wallet';
 import { getProvider } from '../utils/wallet';
@@ -10,17 +10,7 @@ export const useWallet = () => {
     providerType: null
   });
 
-  // Fonction pour vérifier si le wallet est déjà connecté
-  const checkWalletConnection = async (provider: any) => {
-    try {
-      const resp = await provider.connect({ onlyIfTrusted: true });
-      return resp.publicKey;
-    } catch (error) {
-      return null;
-    }
-  };
-
-  const connectWallet = async (type: WalletProvider) => {
+  const connectWallet = useCallback(async (type: WalletProvider) => {
     const provider = getProvider(type);
     if (!provider) {
       alert(`${type} wallet not found. Please install the extension.`);
@@ -28,74 +18,73 @@ export const useWallet = () => {
     }
 
     try {
-      // D'abord vérifions si nous sommes déjà connectés
-      let publicKey = await checkWalletConnection(provider);
+      // Tenter de se connecter et obtenir la clé publique
+      const response = await provider.connect();
       
-      if (!publicKey) {
-        // Si nous ne sommes pas connectés, demandons une nouvelle connexion
-        const response = await provider.connect();
-        publicKey = response.publicKey;
-      }
-
-      // Mise à jour immédiate de l'état
+      // Mise à jour immédiate et complète de l'état
       setConnection({
         provider,
-        publicKey,
+        publicKey: response.publicKey,
         providerType: type
       });
     } catch (error) {
       console.error(`Error connecting to ${type}:`, error);
+      // En cas d'erreur, réinitialiser l'état
+      setConnection({
+        provider: null,
+        publicKey: null,
+        providerType: null
+      });
     }
-  };
+  }, []);
 
-  const disconnectWallet = async () => {
+  const disconnectWallet = useCallback(async () => {
     if (!connection.provider) return;
+    
     try {
       await connection.provider.disconnect();
-      setConnection({ provider: null, publicKey: null, providerType: null });
+      setConnection({
+        provider: null,
+        publicKey: null,
+        providerType: null
+      });
     } catch (error) {
       console.error("Error disconnecting:", error);
     }
-  };
+  }, [connection.provider]);
 
   useEffect(() => {
     if (!connection.provider) return;
 
-    const handleConnect = (publicKey: PublicKey) => {
-      setConnection(prev => ({ ...prev, publicKey }));
+    const handleAccountChanged = (publicKey: PublicKey | null) => {
+      setConnection(prev => ({
+        ...prev,
+        publicKey: publicKey
+      }));
     };
 
     const handleDisconnect = () => {
-      setConnection({ provider: null, publicKey: null, providerType: null });
-    };
-
-    const handleAccountChanged = (publicKey: PublicKey | null) => {
-      if (publicKey) {
-        setConnection(prev => ({ ...prev, publicKey }));
-      } else {
-        setConnection(prev => ({ ...prev, publicKey: null }));
-      }
-    };
-
-    // Ajout des listeners
-    connection.provider.on('connect', handleConnect);
-    connection.provider.on('disconnect', handleDisconnect);
-    connection.provider.on('accountChanged', handleAccountChanged);
-
-    // Vérifie la connexion initiale
-    checkWalletConnection(connection.provider)
-      .then(publicKey => {
-        if (publicKey) {
-          setConnection(prev => ({ ...prev, publicKey }));
-        }
+      setConnection({
+        provider: null,
+        publicKey: null,
+        providerType: null
       });
+    };
 
-    // Cleanup
+    // Ajouter les écouteurs d'événements
+    connection.provider.on('accountChanged', handleAccountChanged);
+    connection.provider.on('disconnect', handleDisconnect);
+
+    // Vérifier si nous avons déjà une connexion active
+    if (connection.provider.isConnected) {
+      connection.provider.publicKey && handleAccountChanged(connection.provider.publicKey);
+    }
+
+    // Nettoyage lors du démontage
     return () => {
       if (connection.provider) {
-        connection.provider.removeListener('connect', handleConnect);
-        connection.provider.removeListener('disconnect', handleDisconnect);
         connection.provider.removeListener('accountChanged', handleAccountChanged);
+        connection.provider.removeListener('disconnect', handleDisconnect);
       }
     };
   }, [connection.provider]);
