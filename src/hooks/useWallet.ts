@@ -46,19 +46,24 @@ export const useWallet = () => {
     if (!connection.provider || !connection.providerType) return;
 
     try {
+      // Réinitialiser d'abord l'état local
+      updateConnectionState(null, null, null);
+
       if (connection.providerType === 'phantom') {
-        // Pour Phantom, on force la déconnexion en rechargeant la page
-        updateConnectionState(null, null, null);
-        window.location.reload();
+        try {
+          // Forcer la déconnexion de Phantom
+          await connection.provider.request({ 
+            method: "disconnect" 
+          });
+        } catch (e) {
+          console.error('Error disconnecting Phantom:', e);
+        }
       } else {
-        // Pour les autres wallets (comme Solflare)
+        // Pour Solflare et autres wallets
         await connection.provider.disconnect();
-        updateConnectionState(null, null, null);
       }
     } catch (error) {
       console.error("Error disconnecting:", error);
-      // En cas d'erreur, on force quand même la déconnexion
-      updateConnectionState(null, null, null);
     }
   }, [connection.provider, connection.providerType, updateConnectionState]);
 
@@ -67,25 +72,35 @@ export const useWallet = () => {
     if (!provider) return;
 
     const handleAccountChanged = (publicKey: PublicKey | null) => {
-      updateConnectionState(provider, publicKey, connection.providerType);
-    };
-
-    const handleConnect = (publicKey: PublicKey) => {
-      updateConnectionState(provider, publicKey, connection.providerType);
+      if (publicKey) {
+        updateConnectionState(provider, publicKey, connection.providerType);
+      } else {
+        updateConnectionState(null, null, null);
+      }
     };
 
     const handleDisconnect = () => {
       updateConnectionState(null, null, null);
     };
 
-    provider.on('connect', handleConnect);
-    provider.on('disconnect', handleDisconnect);
-    provider.on('accountChanged', handleAccountChanged);
+    // Écouteurs d'événements spécifiques à Phantom
+    if (connection.providerType === 'phantom') {
+      provider.on('accountChanged', handleAccountChanged);
+      provider.on('disconnect', handleDisconnect);
+    } else {
+      // Pour Solflare et autres wallets
+      provider.on('connect', (publicKey: PublicKey) => handleAccountChanged(publicKey));
+      provider.on('disconnect', handleDisconnect);
+      provider.on('accountChanged', handleAccountChanged);
+    }
 
     return () => {
-      provider.removeListener('connect', handleConnect);
-      provider.removeListener('disconnect', handleDisconnect);
-      provider.removeListener('accountChanged', handleAccountChanged);
+      if (connection.providerType === 'phantom') {
+        provider.removeListener('accountChanged', handleAccountChanged);
+        provider.removeListener('disconnect', handleDisconnect);
+      } else {
+        provider.removeAllListeners();
+      }
     };
   }, [connection.provider, connection.providerType, updateConnectionState]);
 
