@@ -26,12 +26,6 @@ export const useWallet = () => {
         return;
       }
 
-      // Vérifier si le wallet est déjà connecté
-      if (provider.isConnected && provider.publicKey) {
-        updateConnectionState(provider, provider.publicKey, type);
-        return;
-      }
-
       // Mettre à jour le provider immédiatement
       updateConnectionState(provider, null, type);
 
@@ -52,12 +46,10 @@ export const useWallet = () => {
     if (!connection.provider || !connection.providerType) return;
 
     try {
-      // Gestion spéciale pour Phantom
       if (connection.providerType === 'phantom') {
-        // Force la déconnexion de Phantom
-        await connection.provider.disconnect();
-        // Réinitialise l'état même si la déconnexion de Phantom échoue silencieusement
+        // Pour Phantom, on force la déconnexion en rechargeant la page
         updateConnectionState(null, null, null);
+        window.location.reload();
       } else {
         // Pour les autres wallets (comme Solflare)
         await connection.provider.disconnect();
@@ -65,7 +57,7 @@ export const useWallet = () => {
       }
     } catch (error) {
       console.error("Error disconnecting:", error);
-      // Force la réinitialisation de l'état même en cas d'erreur
+      // En cas d'erreur, on force quand même la déconnexion
       updateConnectionState(null, null, null);
     }
   }, [connection.provider, connection.providerType, updateConnectionState]);
@@ -83,7 +75,6 @@ export const useWallet = () => {
     };
 
     const handleDisconnect = () => {
-      console.log('Wallet disconnected');
       updateConnectionState(null, null, null);
     };
 
@@ -91,32 +82,11 @@ export const useWallet = () => {
     provider.on('disconnect', handleDisconnect);
     provider.on('accountChanged', handleAccountChanged);
 
-    // Si déjà connecté, mettre à jour l'état
-    if (provider.isConnected && provider.publicKey) {
-      handleConnect(provider.publicKey);
-    }
-
     return () => {
       provider.removeListener('connect', handleConnect);
       provider.removeListener('disconnect', handleDisconnect);
       provider.removeListener('accountChanged', handleAccountChanged);
     };
-  }, [connection.provider, connection.providerType, updateConnectionState]);
-
-  // Ajout d'un effet pour surveiller l'état de connexion de Phantom
-  useEffect(() => {
-    if (connection.providerType === 'phantom' && connection.provider) {
-      const checkConnectionStatus = () => {
-        if (!connection.provider.isConnected) {
-          updateConnectionState(null, null, null);
-        }
-      };
-
-      // Vérifie périodiquement l'état de connexion
-      const interval = setInterval(checkConnectionStatus, 1000);
-
-      return () => clearInterval(interval);
-    }
   }, [connection.provider, connection.providerType, updateConnectionState]);
 
   return {
