@@ -4,7 +4,8 @@ import { Button } from './Button';
 import { MessageInput } from './MessageInput';
 import { SignatureDisplay } from './SignatureDisplay';
 import { WalletInfo } from './WalletInfo';
-import { MessageCircle, Wallet, PenSquare } from 'lucide-react';
+import { MessageCircle, Wallet, PenSquare, ExternalLink } from 'lucide-react';
+import { isMobileDevice } from '../utils/wallet';
 
 interface SignerPanelProps {
   connection: WalletConnection;
@@ -27,16 +28,18 @@ export const SignerPanel = ({
   onSign,
   onCopySignature,
 }: SignerPanelProps) => {
-  // Effet pour logger les changements d'état de connexion (utile pour le débogage)
+  const isMobile = isMobileDevice();
+  const isConnected = !!connection.publicKey;
+
+  // Log des changements de connexion pour le debug
   useEffect(() => {
     console.log('Connection state changed:', {
-      isConnected: !!connection.publicKey,
+      isConnected,
       providerType: connection.providerType,
-      publicKey: connection.publicKey?.toBase58()
+      publicKey: connection.publicKey?.toBase58(),
+      isMobile
     });
-  }, [connection]);
-
-  const isConnected = !!connection.publicKey;
+  }, [connection, isConnected, isMobile]);
 
   return (
     <div className="w-full max-w-md bg-gray-800/50 backdrop-blur-lg p-8 rounded-2xl border border-gray-700 shadow-xl">
@@ -47,21 +50,39 @@ export const SignerPanel = ({
               <MessageCircle size={32} className="text-white" />
             </div>
             <h1 className="text-2xl font-bold text-white mb-2">Solana Message Signer</h1>
-            <p className="text-gray-400 text-sm">Choose your preferred wallet to continue</p>
+            <p className="text-gray-400 text-sm">
+              {isMobile 
+                ? "Open in your preferred wallet"
+                : "Choose your preferred wallet to continue"}
+            </p>
           </div>
+          
           <Button 
             variant="primary" 
             onClick={() => onConnect('phantom')}
-            className="bg-gradient-to-r from-purple-600 to-purple-700"
+            className="bg-gradient-to-r from-purple-600 to-purple-700 flex items-center justify-center gap-2"
           >
-            Connect Phantom
+            {isMobile ? (
+              <>
+                Open in Phantom <ExternalLink size={16} />
+              </>
+            ) : (
+              'Connect Phantom'
+            )}
           </Button>
+          
           <Button 
             variant="primary" 
             onClick={() => onConnect('solflare')}
-            className="bg-gradient-to-r from-orange-500 to-orange-600"
+            className="bg-gradient-to-r from-orange-500 to-orange-600 flex items-center justify-center gap-2"
           >
-            Connect Solflare
+            {isMobile ? (
+              <>
+                Open in Solflare <ExternalLink size={16} />
+              </>
+            ) : (
+              'Connect Solflare'
+            )}
           </Button>
         </div>
       ) : (
@@ -100,13 +121,7 @@ export const SignerPanel = ({
           )}
           
           <Button 
-            onClick={() => {
-              onDisconnect();
-              // Force un re-render immédiat
-              setTimeout(() => {
-                window.location.reload();
-              }, 100);
-            }}
+            onClick={onDisconnect}
             className="!bg-transparent border border-gray-600 hover:bg-gray-700/50"
           >
             Disconnect
