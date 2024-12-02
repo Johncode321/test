@@ -12,13 +12,11 @@ declare global {
 }
 
 export const isPhantomBrowser = () => {
-  // Vérifie si on est dans le navigateur intégré de Phantom
   const userAgent = navigator.userAgent.toLowerCase();
   return userAgent.includes('phantom');
 };
 
 export const isSolflareBrowser = () => {
-  // Vérifie si on est dans le navigateur intégré de Solflare
   const userAgent = navigator.userAgent.toLowerCase();
   return userAgent.includes('solflare');
 };
@@ -27,11 +25,21 @@ export const isInAppBrowser = () => {
   return isPhantomBrowser() || isSolflareBrowser();
 };
 
+const getDesktopProvider = (type: WalletProvider) => {
+  switch (type) {
+    case 'phantom':
+      return window?.phantom?.solana;
+    case 'solflare':
+      return window?.solflare;
+    default:
+      return null;
+  }
+};
+
 export const getProvider = async (type: WalletProvider) => {
-  // Si on est dans le navigateur in-app, on attend que le provider soit injecté
+  // Vérifier d'abord si on est dans le navigateur in-app
   if (isInAppBrowser()) {
     if (type === 'phantom' && isPhantomBrowser()) {
-      // Attendre que Phantom injecte son provider
       let attempts = 0;
       while (!window.phantom?.solana && attempts < 50) {
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -41,7 +49,6 @@ export const getProvider = async (type: WalletProvider) => {
     }
 
     if (type === 'solflare' && isSolflareBrowser()) {
-      // Attendre que Solflare injecte son provider
       let attempts = 0;
       while (!window.solflare && attempts < 50) {
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -51,14 +58,32 @@ export const getProvider = async (type: WalletProvider) => {
     }
   }
 
-  // Si on n'est pas dans un navigateur in-app, on redirige
-  const dappUrl = window.location.href;
-  const encodedUrl = encodeURIComponent(dappUrl);
+  // Si on n'est pas dans le navigateur in-app, vérifier l'extension desktop
+  const desktopProvider = getDesktopProvider(type);
+  if (desktopProvider) {
+    return desktopProvider;
+  }
+
+  // Si aucun provider n'est trouvé, rediriger vers mobile ou montrer une erreur
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   
-  if (type === 'phantom') {
-    window.location.href = `https://phantom.app/ul/browse/${encodedUrl}`;
-  } else if (type === 'solflare') {
-    window.location.href = `https://solflare.com/ul/v1/browse/${encodedUrl}`;
+  if (isMobile) {
+    // Redirection mobile
+    const dappUrl = window.location.href;
+    const encodedUrl = encodeURIComponent(dappUrl);
+    
+    if (type === 'phantom') {
+      window.location.href = `https://phantom.app/ul/browse/${encodedUrl}`;
+    } else if (type === 'solflare') {
+      window.location.href = `https://solflare.com/ul/v1/browse/${encodedUrl}`;
+    }
+  } else {
+    // Sur desktop, ouvrir la page de téléchargement de l'extension
+    const downloadUrls = {
+      phantom: 'https://phantom.app/download',
+      solflare: 'https://solflare.com/download'
+    };
+    window.open(downloadUrls[type], '_blank');
   }
   
   return null;
