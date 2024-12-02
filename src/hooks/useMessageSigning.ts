@@ -1,10 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { encode } from 'bs58';
 import { WalletConnection } from '../types/wallet';
 
 export const useMessageSigning = (connection: WalletConnection) => {
   const [message, setMessage] = useState('');
   const [signature, setSignature] = useState('');
+
+  // Réinitialiser l'état quand le wallet change
+  useEffect(() => {
+    setMessage('');
+    setSignature('');
+  }, [connection.publicKey, connection.providerType]);
 
   const signMessage = async () => {
     if (!connection.provider || !message) return;
@@ -15,6 +21,7 @@ export const useMessageSigning = (connection: WalletConnection) => {
       setSignature(base58Signature);
     } catch (error) {
       console.error("Error signing:", error);
+      setSignature(''); // Réinitialiser la signature en cas d'erreur
     }
   };
 
