@@ -49,15 +49,26 @@ export const useWallet = () => {
   }, [updateConnectionState]);
 
   const disconnectWallet = useCallback(async () => {
-    if (!connection.provider) return;
+    if (!connection.provider || !connection.providerType) return;
 
     try {
-      await connection.provider.disconnect();
-      updateConnectionState(null, null, null);
+      // Gestion spéciale pour Phantom
+      if (connection.providerType === 'phantom') {
+        // Force la déconnexion de Phantom
+        await connection.provider.disconnect();
+        // Réinitialise l'état même si la déconnexion de Phantom échoue silencieusement
+        updateConnectionState(null, null, null);
+      } else {
+        // Pour les autres wallets (comme Solflare)
+        await connection.provider.disconnect();
+        updateConnectionState(null, null, null);
+      }
     } catch (error) {
       console.error("Error disconnecting:", error);
+      // Force la réinitialisation de l'état même en cas d'erreur
+      updateConnectionState(null, null, null);
     }
-  }, [connection.provider, updateConnectionState]);
+  }, [connection.provider, connection.providerType, updateConnectionState]);
 
   useEffect(() => {
     const provider = connection.provider;
@@ -72,6 +83,7 @@ export const useWallet = () => {
     };
 
     const handleDisconnect = () => {
+      console.log('Wallet disconnected');
       updateConnectionState(null, null, null);
     };
 
@@ -89,6 +101,22 @@ export const useWallet = () => {
       provider.removeListener('disconnect', handleDisconnect);
       provider.removeListener('accountChanged', handleAccountChanged);
     };
+  }, [connection.provider, connection.providerType, updateConnectionState]);
+
+  // Ajout d'un effet pour surveiller l'état de connexion de Phantom
+  useEffect(() => {
+    if (connection.providerType === 'phantom' && connection.provider) {
+      const checkConnectionStatus = () => {
+        if (!connection.provider.isConnected) {
+          updateConnectionState(null, null, null);
+        }
+      };
+
+      // Vérifie périodiquement l'état de connexion
+      const interval = setInterval(checkConnectionStatus, 1000);
+
+      return () => clearInterval(interval);
+    }
   }, [connection.provider, connection.providerType, updateConnectionState]);
 
   return {
