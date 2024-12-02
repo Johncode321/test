@@ -1,9 +1,10 @@
+import { useEffect } from 'react';
 import { WalletConnection } from '../types/wallet';
 import { Button } from './Button';
 import { MessageInput } from './MessageInput';
 import { SignatureDisplay } from './SignatureDisplay';
 import { WalletInfo } from './WalletInfo';
-import { Wallet, PenSquare, MessageCircle } from 'lucide-react';
+import { MessageCircle, Wallet, PenSquare } from 'lucide-react';
 
 interface SignerPanelProps {
   connection: WalletConnection;
@@ -26,9 +27,20 @@ export const SignerPanel = ({
   onSign,
   onCopySignature,
 }: SignerPanelProps) => {
+  // Effet pour logger les changements d'état de connexion (utile pour le débogage)
+  useEffect(() => {
+    console.log('Connection state changed:', {
+      isConnected: !!connection.publicKey,
+      providerType: connection.providerType,
+      publicKey: connection.publicKey?.toBase58()
+    });
+  }, [connection]);
+
+  const isConnected = !!connection.publicKey;
+
   return (
     <div className="w-full max-w-md bg-gray-800/50 backdrop-blur-lg p-8 rounded-2xl border border-gray-700 shadow-xl">
-      {!connection.publicKey ? (
+      {!isConnected ? (
         <div className="space-y-6">
           <div className="text-center">
             <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
