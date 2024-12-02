@@ -70,57 +70,41 @@ export const useWallet = () => {
 
     try {
       if (connection.providerType === 'phantom') {
-        const phantom = window.phantom?.solana as PhantomProvider;
+        const phantom = connection.provider as PhantomProvider;
         
-        try {
-          // Déconnexion directe avec le provider global Phantom
-          if (phantom?.isConnected) {
-            await phantom.request({
-              method: "disconnect",
-              params: {}
-            });
+        if (phantom.isConnected) {
+          // D'abord essayer la déconnexion standard
+          try {
             await phantom.disconnect();
+          } catch (e) {
+            console.error('Standard disconnect error:', e);
+            // Si la déconnexion standard échoue, essayer via request
+            try {
+              await phantom.request({
+                method: "disconnect",
+                params: {}
+              });
+            } catch (e) {
+              console.error('Request disconnect error:', e);
+            }
           }
-        } catch (e) {
-          console.error('Phantom global provider disconnect error:', e);
         }
 
-        try {
-          // Déconnexion via le provider stocké dans connection
-          if (connection.provider.isConnected) {
-            await connection.provider.request({
-              method: "disconnect",
-              params: {}
-            });
-            await connection.provider.disconnect();
-          }
-        } catch (e) {
-          console.error('Stored provider disconnect error:', e);
-        }
-        
-        // S'assurer que les listeners sont retirés
-        window.phantom?.solana?.removeAllListeners?.('disconnect');
-        window.phantom?.solana?.removeAllListeners?.('accountChanged');
-        connection.provider.removeAllListeners?.('disconnect');
-        connection.provider.removeAllListeners?.('accountChanged');
+        // Nettoyage des écouteurs d'événements
+        phantom.removeListener('disconnect', () => {});
+        phantom.removeListener('accountChanged', () => {});
       } else {
         // Pour Solflare et autres wallets
         await connection.provider.disconnect();
       }
 
-      // Réinitialiser l'état
+      // Mise à jour de l'état après la déconnexion
       updateConnectionState(null, null, null);
-      
-      // Recharger la page pour s'assurer d'un état propre
-      setTimeout(() => {
-        window.location.reload();
-      }, 50);
-      
+
     } catch (error) {
-      console.error("Error disconnecting:", error);
-      // Forcer la réinitialisation même en cas d'erreur
+      console.error("Error during disconnect:", error);
+      // Forcer la réinitialisation en cas d'erreur
       updateConnectionState(null, null, null);
-      window.location.reload();
     }
   }, [connection.provider, connection.providerType, updateConnectionState]);
 
