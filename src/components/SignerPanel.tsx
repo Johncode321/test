@@ -100,7 +100,13 @@ export const SignerPanel = ({
           )}
           
           <Button 
-            onClick={onDisconnect}
+            onClick={() => {
+              onDisconnect();
+              // Force un re-render immédiat
+              setTimeout(() => {
+                window.location.reload();
+              }, 100);
+            }}
             className="!bg-transparent border border-gray-600 hover:bg-gray-700/50"
           >
             Disconnect
