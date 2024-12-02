@@ -10,6 +10,16 @@ export const useWallet = () => {
     providerType: null
   });
 
+  // Fonction pour vérifier si le wallet est déjà connecté
+  const checkWalletConnection = async (provider: any) => {
+    try {
+      const resp = await provider.connect({ onlyIfTrusted: true });
+      return resp.publicKey;
+    } catch (error) {
+      return null;
+    }
+  };
+
   const connectWallet = async (type: WalletProvider) => {
     const provider = getProvider(type);
     if (!provider) {
@@ -18,11 +28,19 @@ export const useWallet = () => {
     }
 
     try {
-      const response = await provider.connect();
-      // Immédiatement mettre à jour l'état avec le provider et la clé publique
+      // D'abord vérifions si nous sommes déjà connectés
+      let publicKey = await checkWalletConnection(provider);
+      
+      if (!publicKey) {
+        // Si nous ne sommes pas connectés, demandons une nouvelle connexion
+        const response = await provider.connect();
+        publicKey = response.publicKey;
+      }
+
+      // Mise à jour immédiate de l'état
       setConnection({
         provider,
-        publicKey: response.publicKey,
+        publicKey,
         providerType: type
       });
     } catch (error) {
@@ -48,21 +66,37 @@ export const useWallet = () => {
     };
 
     const handleDisconnect = () => {
-      setConnection(prev => ({ ...prev, publicKey: null }));
+      setConnection({ provider: null, publicKey: null, providerType: null });
     };
 
     const handleAccountChanged = (publicKey: PublicKey | null) => {
-      setConnection(prev => ({ ...prev, publicKey }));
+      if (publicKey) {
+        setConnection(prev => ({ ...prev, publicKey }));
+      } else {
+        setConnection(prev => ({ ...prev, publicKey: null }));
+      }
     };
 
+    // Ajout des listeners
     connection.provider.on('connect', handleConnect);
     connection.provider.on('disconnect', handleDisconnect);
     connection.provider.on('accountChanged', handleAccountChanged);
 
+    // Vérifie la connexion initiale
+    checkWalletConnection(connection.provider)
+      .then(publicKey => {
+        if (publicKey) {
+          setConnection(prev => ({ ...prev, publicKey }));
+        }
+      });
+
+    // Cleanup
     return () => {
-      connection.provider.removeListener('connect', handleConnect);
-      connection.provider.removeListener('disconnect', handleDisconnect);
-      connection.provider.removeListener('accountChanged', handleAccountChanged);
+      if (connection.provider) {
+        connection.provider.removeListener('connect', handleConnect);
+        connection.provider.removeListener('disconnect', handleDisconnect);
+        connection.provider.removeListener('accountChanged', handleAccountChanged);
+      }
     };
   }, [connection.provider]);
 
