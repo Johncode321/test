@@ -18,8 +18,13 @@ export const useWallet = () => {
     }
 
     try {
-      await provider.connect();
-      setConnection(prev => ({ ...prev, provider, providerType: type }));
+      const response = await provider.connect();
+      // Immédiatement mettre à jour l'état avec le provider et la clé publique
+      setConnection({
+        provider,
+        publicKey: response.publicKey,
+        providerType: type
+      });
     } catch (error) {
       console.error(`Error connecting to ${type}:`, error);
     }
@@ -55,7 +60,9 @@ export const useWallet = () => {
     connection.provider.on('accountChanged', handleAccountChanged);
 
     return () => {
-      connection.provider.disconnect();
+      connection.provider.removeListener('connect', handleConnect);
+      connection.provider.removeListener('disconnect', handleDisconnect);
+      connection.provider.removeListener('accountChanged', handleAccountChanged);
     };
   }, [connection.provider]);
 
