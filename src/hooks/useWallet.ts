@@ -1,19 +1,7 @@
-\import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { PublicKey } from '@solana/web3.js';
 import { WalletConnection, WalletProvider } from '../types/wallet';
-import { getProvider, isMobileDevice, handleMobileRedirect } from '../utils/wallet';
-
-interface PhantomProvider {
-  publicKey: PublicKey | null;
-  isConnected: boolean | null;
-  signMessage: (message: Uint8Array | string, display?: 'utf8' | 'hex') => Promise<any>;
-  connect: (opts?: Partial<{ onlyIfTrusted: boolean }>) => Promise<{ publicKey: PublicKey }>;
-  disconnect: () => Promise<void>;
-  on: (event: string, handler: (args: any) => void) => void;
-  request: (method: string, params: any) => Promise<unknown>;
-  removeAllListeners?: (event: string) => void;
-  removeListener: (event: string, handler: (args: any) => void) => void;
-}
+import { getProvider, isInAppBrowser } from '../utils/wallet';
 
 export const useWallet = () => {
   const [connection, setConnection] = useState<WalletConnection>({
@@ -24,7 +12,7 @@ export const useWallet = () => {
 
   const updateConnectionState = useCallback((
     provider: any,
-    publicKey: PublicKey | null,
+    publicKey: PublicKey | null, 
     type: WalletProvider | null
   ) => {
     setConnection({
@@ -36,18 +24,13 @@ export const useWallet = () => {
 
   const connectWallet = useCallback(async (type: WalletProvider) => {
     try {
-      // Vérifier si mobile et gérer la redirection si nécessaire
-      if (handleMobileRedirect(type)) {
-        return;
-      }
+      const provider = await getProvider(type);
+      if (!provider) return; // Redirection effectuée
 
-      const provider = getProvider(type);
-      if (!provider) return;
-
-      // Mettre à jour le provider
+      // Si on arrive ici, on a un provider (in-app browser)
       updateConnectionState(provider, null, type);
 
-      // Tenter la connexion
+      // Connecter le wallet
       const response = await provider.connect();
       
       if (response?.publicKey) {
@@ -64,20 +47,19 @@ export const useWallet = () => {
 
     try {
       await connection.provider.disconnect();
+      updateConnectionState(null, null, null);
       
-      if (isMobileDevice()) {
-        // Forcer un rechargement sur mobile après déconnexion
+      // Si on est dans un in-app browser, recharger la page
+      if (isInAppBrowser()) {
         setTimeout(() => window.location.reload(), 100);
       }
-
-      updateConnectionState(null, null, null);
     } catch (error) {
       console.error("Error during disconnect:", error);
       updateConnectionState(null, null, null);
     }
   }, [connection.provider, connection.providerType, updateConnectionState]);
 
-  // Gérer les événements de wallet
+  // Gérer les événements du wallet
   useEffect(() => {
     const provider = connection.provider;
     if (!provider) return;
@@ -90,21 +72,14 @@ export const useWallet = () => {
       updateConnectionState(null, null, null);
     };
 
-    // Ajouter les écouteurs d'événements
     provider.on('connect', (publicKey: PublicKey) => handleAccountChanged(publicKey));
     provider.on('disconnect', handleDisconnect);
     provider.on('accountChanged', handleAccountChanged);
 
     return () => {
-      if (provider.removeAllListeners) {
-        provider.removeAllListeners('connect');
-        provider.removeAllListeners('disconnect');
-        provider.removeAllListeners('accountChanged');
-      } else {
-        provider.removeListener('connect', handleAccountChanged);
-        provider.removeListener('disconnect', handleDisconnect);
-        provider.removeListener('accountChanged', handleAccountChanged);
-      }
+      provider.removeAllListeners?.('connect');
+      provider.removeAllListeners?.('disconnect');
+      provider.removeAllListeners?.('accountChanged');
     };
   }, [connection.provider, connection.providerType, updateConnectionState]);
 
@@ -112,6 +87,6 @@ export const useWallet = () => {
     connection,
     connectWallet,
     disconnectWallet,
-    isMobile: isMobileDevice()
+    isInAppBrowser: isInAppBrowser()
   };
 };
