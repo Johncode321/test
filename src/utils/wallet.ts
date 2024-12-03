@@ -25,18 +25,27 @@ export const isInAppBrowser = () => {
   return isPhantomBrowser() || isSolflareBrowser();
 };
 
-const getDesktopProvider = (type: WalletProvider) => {
+const getDesktopProvider = async (type: WalletProvider) => {
   switch (type) {
     case 'phantom':
       return window?.phantom?.solana;
-    case 'solflare':
-      return window?.solflare;
+    case 'solflare': {
+      // Attendre que Solflare soit disponible
+      let attempts = 0;
+      while (!window.solflare && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+      return window.solflare;
+    }
     default:
       return null;
   }
 };
 
 export const getProvider = async (type: WalletProvider) => {
+  console.log(`Getting provider for ${type}`);
+  
   // Si nous sommes dans le navigateur in-app
   if (isInAppBrowser()) {
     if (type === 'phantom' && isPhantomBrowser()) {
@@ -58,23 +67,28 @@ export const getProvider = async (type: WalletProvider) => {
   }
 
   // Pour les navigateurs desktop normaux
-  const desktopProvider = getDesktopProvider(type);
-  if (desktopProvider) {
-    try {
-      // Pour Solflare sur desktop, on doit vérifier si le wallet est installé
+  try {
+    const desktopProvider = await getDesktopProvider(type);
+    
+    if (desktopProvider) {
+      console.log(`Desktop provider found for ${type}`);
+      
       if (type === 'solflare') {
-        if (!window.solflare) {
+        // Attendre un peu que le provider soit complètement initialisé
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        // Vérifier si le provider est prêt
+        if (typeof desktopProvider.isConnected === 'undefined') {
+          console.log('Solflare provider not ready, redirecting to download');
           window.open('https://solflare.com/download', '_blank');
           return null;
         }
-        // Attendre que le provider soit complètement chargé
-        await new Promise(resolve => setTimeout(resolve, 100));
       }
+      
       return desktopProvider;
-    } catch (error) {
-      console.error('Error getting desktop provider:', error);
-      return null;
     }
+  } catch (error) {
+    console.error('Error getting desktop provider:', error);
   }
 
   // Pour mobile ou si le wallet n'est pas installé
