@@ -37,7 +37,24 @@ const getDesktopProvider = (type: WalletProvider) => {
 };
 
 export const getProvider = async (type: WalletProvider) => {
-  // Vérifier d'abord si on est dans le navigateur in-app
+  // Si nous sommes dans le navigateur Solflare
+  if (isSolflareBrowser() && type === 'solflare') {
+    let attempts = 0;
+    while (!window.solflare && attempts < 50) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      attempts++;
+    }
+    
+    // Si l'utilisateur est déjà connecté dans le navigateur Solflare,
+    // on peut vérifier directement la connexion
+    if (window.solflare?.isConnected) {
+      return window.solflare;
+    }
+    
+    return window.solflare;
+  }
+
+  // Reste du code pour les autres cas
   if (isInAppBrowser()) {
     if (type === 'phantom' && isPhantomBrowser()) {
       let attempts = 0;
@@ -47,28 +64,16 @@ export const getProvider = async (type: WalletProvider) => {
       }
       return window.phantom?.solana;
     }
-
-    if (type === 'solflare' && isSolflareBrowser()) {
-      let attempts = 0;
-      while (!window.solflare && attempts < 50) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        attempts++;
-      }
-      return window.solflare;
-    }
   }
 
-  // Si on n'est pas dans le navigateur in-app, vérifier l'extension desktop
   const desktopProvider = getDesktopProvider(type);
   if (desktopProvider) {
     return desktopProvider;
   }
 
-  // Si aucun provider n'est trouvé, rediriger vers mobile ou montrer une erreur
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   
   if (isMobile) {
-    // Redirection mobile
     const dappUrl = window.location.href;
     const encodedUrl = encodeURIComponent(dappUrl);
     
@@ -78,7 +83,6 @@ export const getProvider = async (type: WalletProvider) => {
       window.location.href = `https://solflare.com/ul/v1/browse/${encodedUrl}`;
     }
   } else {
-    // Sur desktop, ouvrir la page de téléchargement de l'extension
     const downloadUrls = {
       phantom: 'https://phantom.app/download',
       solflare: 'https://solflare.com/download'
@@ -87,4 +91,4 @@ export const getProvider = async (type: WalletProvider) => {
   }
   
   return null;
-};
+}
