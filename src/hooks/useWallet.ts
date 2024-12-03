@@ -47,7 +47,7 @@ export const useWallet = () => {
           const response = await provider.connect();
           
           // Attendre un peu pour s'assurer que la connexion est établie
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise(resolve => setTimeout(resolve, 200));
           
           // Vérifier à nouveau la connexion
           const publicKey = await provider.publicKey;
