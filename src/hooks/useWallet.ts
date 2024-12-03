@@ -27,10 +27,7 @@ export const useWallet = () => {
       const provider = await getProvider(type);
       if (!provider) return; // Redirection effectuée
 
-      // Si on arrive ici, on a un provider (in-app browser)
-      updateConnectionState(provider, null, type);
-
-      // Connecter le wallet
+      // On attend d'avoir la réponse de connect() avant de mettre à jour l'état
       const response = await provider.connect();
       
       if (response?.publicKey) {
