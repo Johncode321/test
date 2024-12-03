@@ -1,11 +1,11 @@
-import { useEffect } from 'react';
 import { WalletConnection } from '../types/wallet';
 import { Button } from './Button';
 import { MessageInput } from './MessageInput';
 import { SignatureDisplay } from './SignatureDisplay';
 import { WalletInfo } from './WalletInfo';
-import { MessageCircle, Wallet, PenSquare, ExternalLink } from 'lucide-react';
+import { PenSquare, ExternalLink } from 'lucide-react';
 import { isInAppBrowser, isPhantomBrowser, isSolflareBrowser } from '../utils/wallet';
+import { SolanaLogo } from './SolanaLogo';
 
 interface SignerPanelProps {
   connection: WalletConnection;
@@ -34,7 +34,6 @@ export const SignerPanel = ({
   const isConnected = !!connection.publicKey;
 
   const renderWalletButtons = () => {
-    // Sur mobile dans un navigateur wallet spécifique
     if (inAppBrowser) {
       if (isPhantom) {
         return (
@@ -60,7 +59,6 @@ export const SignerPanel = ({
       }
     }
 
-    // Sur desktop ou navigateur mobile normal, afficher les deux boutons
     return (
       <>
         <Button 
@@ -99,8 +97,8 @@ export const SignerPanel = ({
       {!isConnected ? (
         <div className="space-y-6">
           <div className="text-center">
-            <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <MessageCircle size={32} className="text-white" />
+            <div className="mb-6 flex justify-center">
+              <SolanaLogo className="w-20 h-20" />
             </div>
             <h1 className="text-2xl font-bold text-white mb-2">Solana Message Signer</h1>
             <p className="text-gray-400 text-sm">
