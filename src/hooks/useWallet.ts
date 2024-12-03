@@ -1,7 +1,9 @@
+// src/hooks/useWallet.ts
+
 import { useState, useEffect, useCallback } from 'react';
 import { PublicKey } from '@solana/web3.js';
 import { WalletConnection, WalletProvider } from '../types/wallet';
-import { getProvider, isInAppBrowser } from '../utils/wallet';
+import { getProvider, isInAppBrowser, isSolflareBrowser } from '../utils/wallet';
 
 export const useWallet = () => {
   const [connection, setConnection] = useState<WalletConnection>({
@@ -27,12 +29,17 @@ export const useWallet = () => {
       const provider = await getProvider(type);
       if (!provider) return;
 
-      // Mise à jour initiale du provider (nécessaire pour Solflare)
-      if (type === 'solflare') {
-        updateConnectionState(provider, null, type);
+      // Gestion spéciale pour le navigateur Solflare
+      if (isSolflareBrowser() && type === 'solflare' && provider.isConnected) {
+        // Si déjà connecté, obtenir directement la clé publique
+        const publicKey = await provider.publicKey;
+        if (publicKey) {
+          updateConnectionState(provider, publicKey, type);
+          return;
+        }
       }
 
-      // Connecter le wallet
+      // Pour tous les autres cas, procéder normalement
       const response = await provider.connect();
       
       if (response?.publicKey) {
