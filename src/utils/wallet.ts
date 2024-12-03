@@ -37,24 +37,7 @@ const getDesktopProvider = (type: WalletProvider) => {
 };
 
 export const getProvider = async (type: WalletProvider) => {
-  // Si nous sommes dans le navigateur Solflare
-  if (isSolflareBrowser() && type === 'solflare') {
-    let attempts = 0;
-    while (!window.solflare && attempts < 50) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      attempts++;
-    }
-    
-    // Si l'utilisateur est déjà connecté dans le navigateur Solflare,
-    // on peut vérifier directement la connexion
-    if (window.solflare?.isConnected) {
-      return window.solflare;
-    }
-    
-    return window.solflare;
-  }
-
-  // Reste du code pour les autres cas
+  // Si nous sommes dans le navigateur in-app
   if (isInAppBrowser()) {
     if (type === 'phantom' && isPhantomBrowser()) {
       let attempts = 0;
@@ -64,13 +47,37 @@ export const getProvider = async (type: WalletProvider) => {
       }
       return window.phantom?.solana;
     }
+    if (type === 'solflare' && isSolflareBrowser()) {
+      let attempts = 0;
+      while (!window.solflare && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+      return window.solflare;
+    }
   }
 
+  // Pour les navigateurs desktop normaux
   const desktopProvider = getDesktopProvider(type);
   if (desktopProvider) {
-    return desktopProvider;
+    try {
+      // Pour Solflare sur desktop, on doit vérifier si le wallet est installé
+      if (type === 'solflare') {
+        if (!window.solflare) {
+          window.open('https://solflare.com/download', '_blank');
+          return null;
+        }
+        // Attendre que le provider soit complètement chargé
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      return desktopProvider;
+    } catch (error) {
+      console.error('Error getting desktop provider:', error);
+      return null;
+    }
   }
 
+  // Pour mobile ou si le wallet n'est pas installé
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   
   if (isMobile) {
@@ -91,4 +98,4 @@ export const getProvider = async (type: WalletProvider) => {
   }
   
   return null;
-}
+};
