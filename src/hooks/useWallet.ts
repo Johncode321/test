@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { PublicKey } from '@solana/web3.js';
 import { WalletConnection, WalletProvider } from '../types/wallet';
-import { getProvider, isInAppBrowser, isSolflareBrowser } from '../utils/wallet';
+import { getProvider, isInAppBrowser } from '../utils/wallet';
 
 export const useWallet = () => {
   const [connection, setConnection] = useState<WalletConnection>({
@@ -29,17 +29,13 @@ export const useWallet = () => {
       const provider = await getProvider(type);
       if (!provider) return;
 
-      // Gestion spéciale pour le navigateur Solflare
-      if (isSolflareBrowser() && type === 'solflare' && provider.isConnected) {
-        // Si déjà connecté, obtenir directement la clé publique
-        const publicKey = await provider.publicKey;
-        if (publicKey) {
-          updateConnectionState(provider, publicKey, type);
-          return;
-        }
+      // Vérifier si le provider est déjà connecté
+      if (provider.isConnected && provider.publicKey) {
+        updateConnectionState(provider, provider.publicKey, type);
+        return;
       }
 
-      // Pour tous les autres cas, procéder normalement
+      // Tenter la connexion
       const response = await provider.connect();
       
       if (response?.publicKey) {
