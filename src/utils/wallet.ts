@@ -75,7 +75,7 @@ export const getProvider = async (type: WalletProvider) => {
       
       if (type === 'solflare') {
         // Attendre un peu que le provider soit complètement initialisé
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise(resolve => setTimeout(resolve, 100));
         
         // Vérifier si le provider est prêt
         if (typeof desktopProvider.isConnected === 'undefined') {
