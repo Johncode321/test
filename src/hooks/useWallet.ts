@@ -25,9 +25,14 @@ export const useWallet = () => {
   const connectWallet = useCallback(async (type: WalletProvider) => {
     try {
       const provider = await getProvider(type);
-      if (!provider) return; // Redirection effectuée
+      if (!provider) return;
 
-      // On attend d'avoir la réponse de connect() avant de mettre à jour l'état
+      // Mise à jour initiale du provider (nécessaire pour Solflare)
+      if (type === 'solflare') {
+        updateConnectionState(provider, null, type);
+      }
+
+      // Connecter le wallet
       const response = await provider.connect();
       
       if (response?.publicKey) {
@@ -46,7 +51,6 @@ export const useWallet = () => {
       await connection.provider.disconnect();
       updateConnectionState(null, null, null);
       
-      // Si on est dans un in-app browser, recharger la page
       if (isInAppBrowser()) {
         setTimeout(() => window.location.reload(), 100);
       }
@@ -56,7 +60,6 @@ export const useWallet = () => {
     }
   }, [connection.provider, connection.providerType, updateConnectionState]);
 
-  // Gérer les événements du wallet
   useEffect(() => {
     const provider = connection.provider;
     if (!provider) return;
