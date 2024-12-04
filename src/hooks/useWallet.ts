@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { PublicKey } from '@solana/web3.js';
 import { WalletConnection, WalletProvider } from '../types/wallet';
-import { transact } from '@solana-mobile/wallet-adapter-mobile';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 
 // Utility functions
@@ -23,26 +22,6 @@ const isMobileDevice = () => {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 };
 
-// Mobile Wallet Adapter implementation
-const getMobileWalletHandle = async () => {
-  try {
-    return await transact(async (wallet) => {
-      const authResult = await wallet.authorize({
-        cluster: WalletAdapterNetwork.Mainnet,
-        identity: {
-          name: "Solana Message Signer",
-          uri: window.location.origin,
-          icon: "/solana-logo.svg"
-        }
-      });
-      return { wallet, authResult };
-    });
-  } catch (error) {
-    console.error("Mobile wallet authorization error:", error);
-    return null;
-  }
-};
-
 // Get provider function
 const getProvider = async (type: WalletProvider) => {
   console.log(`Getting provider for ${type}`);
@@ -50,29 +29,23 @@ const getProvider = async (type: WalletProvider) => {
   const isMobile = isMobileDevice();
   const isStandalone = !isInAppBrowser();
 
-  // Si mobile et pas dans un wallet browser, utiliser Mobile Wallet Adapter
+  // Si mobile et pas dans un wallet browser
   if (isMobile && isStandalone) {
-    const mobileHandle = await getMobileWalletHandle();
-    if (mobileHandle) {
-      const { wallet, authResult } = mobileHandle;
-      return {
-        publicKey: new PublicKey(authResult.accounts[0].address),
-        signMessage: async (message: Uint8Array) => {
-          return await transact(async (w) => {
-            return await w.signMessage(message);
-          });
-        },
-        disconnect: async () => {
-          await transact(async (w) => {
-            await w.deauthorize();
-          });
-        },
-        on: () => {},
-        removeAllListeners: () => {},
-        isConnected: true
-      };
+    try {
+      const dappUrl = window.location.href;
+      const encodedUrl = encodeURIComponent(dappUrl);
+      const ref = encodeURIComponent(window.location.origin);
+
+      if (type === 'solflare') {
+        window.location.href = `solflare://ul/v1/browse/${encodedUrl}?ref=${ref}`;
+      } else {
+        window.location.href = `https://phantom.app/ul/browse/${encodedUrl}?ref=${ref}`;
+      }
+      return null;
+    } catch (error) {
+      console.error('Mobile connection error:', error);
+      return null;
     }
-    return null;
   }
   
   // Si dans un wallet browser
@@ -158,12 +131,6 @@ export const useWallet = () => {
     try {
       const provider = await getProvider(type);
       if (!provider) return;
-
-      // Si provider mobile
-      if (provider.publicKey instanceof PublicKey) {
-        updateConnectionState(provider, provider.publicKey, type);
-        return;
-      }
 
       // Pour Solflare
       if (type === 'solflare') {
