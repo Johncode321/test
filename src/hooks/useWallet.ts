@@ -28,19 +28,11 @@ const getProvider = async (type: WalletProvider) => {
   if (isMobile && isStandaloneBrowser) {
     const currentUrl = window.location.href;
     const encodedUrl = encodeURIComponent(currentUrl);
-    const encodedName = encodeURIComponent("Solana Message Signer");
-    const encodedIcon = encodeURIComponent(`${window.location.origin}/favicon.ico`);
 
     if (type === 'phantom') {
-      window.location.href = `https://phantom.app/ul/connect?app_url=${encodedUrl}&dapp_url=${encodedUrl}&redirect_url=${encodedUrl}`;
+      window.location.href = `https://phantom.app/ul/browse/${encodedUrl}`;
     } else {
-      const params = {
-        dapp_url: encodedUrl,
-        redirect_url: encodedUrl,
-        app_name: encodedName,
-        app_icon: encodedIcon,
-      };
-      window.location.href = `solflare://connect?${new URLSearchParams(params).toString()}`;
+      window.location.href = `https://solflare.com/ul/browse/${encodedUrl}`;
     }
     return null;
   }
