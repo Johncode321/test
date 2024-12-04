@@ -6,7 +6,6 @@ import { WalletInfo } from './WalletInfo';
 import { PenSquare, ExternalLink } from 'lucide-react';
 import { isInAppBrowser, isPhantomBrowser, isSolflareBrowser } from '../utils/wallet';
 import { SolanaLogo } from './SolanaLogo';
-import { useDeepLink } from '../hooks/useDeepLink';
 
 interface SignerPanelProps {
   connection: WalletConnection;
@@ -29,7 +28,6 @@ export const SignerPanel = ({
   onSign,
   onCopySignature,
 }: SignerPanelProps) => {
-  const { openDeepLink } = useDeepLink();
   const inAppBrowser = isInAppBrowser();
   const isPhantom = isPhantomBrowser();
   const isSolflare = isSolflareBrowser();
@@ -62,53 +60,35 @@ export const SignerPanel = ({
     }
 
     return (
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <Button 
-            variant="primary" 
-            onClick={() => onConnect('phantom')}
-            className="bg-gradient-to-r from-purple-600 to-purple-700 flex items-center justify-center gap-2"
-          >
-            {!inAppBrowser ? (
-              <>
-                Open in Phantom <ExternalLink size={16} />
-              </>
-            ) : (
-              'Connect with Phantom'
-            )}
-          </Button>
-          
-          <Button 
-            onClick={() => openDeepLink('phantom', message)}
-            className="!bg-transparent border border-purple-600 hover:bg-purple-600/10 flex items-center justify-center gap-2"
-          >
-            Sign with Phantom <ExternalLink size={16} />
-          </Button>
-        </div>
-
-        <div className="space-y-2">
-          <Button 
-            variant="primary" 
-            onClick={() => onConnect('solflare')}
-            className="bg-gradient-to-r from-orange-500 to-orange-600 flex items-center justify-center gap-2"
-          >
-            {!inAppBrowser ? (
-              <>
-                Open in Solflare <ExternalLink size={16} />
-              </>
-            ) : (
-              'Connect with Solflare'
-            )}
-          </Button>
-          
-          <Button 
-            onClick={() => openDeepLink('solflare', message)}
-            className="!bg-transparent border border-orange-500 hover:bg-orange-500/10 flex items-center justify-center gap-2"
-          >
-            Sign with Solflare <ExternalLink size={16} />
-          </Button>
-        </div>
-      </div>
+      <>
+        <Button 
+          variant="primary" 
+          onClick={() => onConnect('phantom')}
+          className="bg-gradient-to-r from-purple-600 to-purple-700 flex items-center justify-center gap-2"
+        >
+          {!inAppBrowser ? (
+            <>
+              Open in Phantom <ExternalLink size={16} />
+            </>
+          ) : (
+            'Connect with Phantom'
+          )}
+        </Button>
+        
+        <Button 
+          variant="primary" 
+          onClick={() => onConnect('solflare')}
+          className="bg-gradient-to-r from-orange-500 to-orange-600 flex items-center justify-center gap-2"
+        >
+          {!inAppBrowser ? (
+            <>
+              Open in Solflare <ExternalLink size={16} />
+            </>
+          ) : (
+            'Connect with Solflare'
+          )}
+        </Button>
+      </>
     );
   };
 
@@ -127,11 +107,6 @@ export const SignerPanel = ({
                 : "Open in your preferred wallet"}
             </p>
           </div>
-
-          <MessageInput
-            value={message}
-            onChange={onMessageChange}
-          />
           
           {renderWalletButtons()}
         </div>
