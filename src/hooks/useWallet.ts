@@ -79,15 +79,23 @@ export const useWallet = () => {
     if (!connection.provider || !connection.providerType) return;
 
     try {
-      await connection.provider.disconnect();
-      updateConnectionState(null, null, null);
-      
-      if (isInAppBrowser()) {
-        setTimeout(() => window.location.reload(), 100);
+      if (connection.providerType === 'solflare') {
+        // Force la déconnexion et la mise à jour de l'état
+        updateConnectionState(null, null, null);
+        
+        // Attendre un court instant avant de recharger la page
+        setTimeout(() => {
+          window.location.reload();
+        }, 100);
+      } else {
+        await connection.provider.disconnect();
+        updateConnectionState(null, null, null);
       }
     } catch (error) {
       console.error("Error during disconnect:", error);
+      // En cas d'erreur, forcer la déconnexion
       updateConnectionState(null, null, null);
+      window.location.reload();
     }
   }, [connection.provider, connection.providerType, updateConnectionState]);
 
