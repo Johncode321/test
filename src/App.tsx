@@ -1,37 +1,25 @@
-import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-import { WalletContextProvider } from './contexts/WalletContextProvider';
-import { SignerPanel } from './components/SignerPanel';
+import { useWallet } from './hooks/useWallet';
 import { useMessageSigning } from './hooks/useMessageSigning';
+import { SignerPanel } from './components/SignerPanel';
 
-function AppContent() {
-  const { publicKey, disconnect, connected, signMessage } = useWallet();
-  const { connection } = useConnection();
-  const { message, signature, setMessage, signMessageWithAdapter, copySignature } = useMessageSigning();
+function App() {
+  const { connection, connectWallet, disconnectWallet } = useWallet();
+  const { message, signature, setMessage, signMessage, copySignature } = useMessageSigning(connection);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center p-4">
       <SignerPanel
-        connection={{
-          publicKey,
-          providerType: connected ? 'wallet-adapter' : null,
-          provider: connected ? { signMessage } : null
-        }}
+        connection={connection}
         message={message}
         signature={signature}
         onMessageChange={setMessage}
-        onConnect={() => {}} // Handled by WalletMultiButton now
-        onDisconnect={disconnect}
-        onSign={signMessageWithAdapter}
+        onConnect={connectWallet}
+        onDisconnect={disconnectWallet}
+        onSign={signMessage}
         onCopySignature={copySignature}
       />
     </div>
   );
 }
 
-export default function App() {
-  return (
-    <WalletContextProvider>
-      <AppContent />
-    </WalletContextProvider>
-  );
-}
+export default App;
