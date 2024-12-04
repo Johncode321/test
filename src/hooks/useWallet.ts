@@ -3,7 +3,103 @@
 import { useState, useEffect, useCallback } from 'react';
 import { PublicKey } from '@solana/web3.js';
 import { WalletConnection, WalletProvider } from '../types/wallet';
-import { getProvider, isInAppBrowser, isSolflareBrowser } from '../utils/wallet';
+
+// Utility functions
+const isPhantomBrowser = () => {
+  const userAgent = navigator.userAgent.toLowerCase();
+  return userAgent.includes('phantom');
+};
+
+const isSolflareBrowser = () => {
+  const userAgent = navigator.userAgent.toLowerCase();
+  return userAgent.includes('solflare');
+};
+
+const isInAppBrowser = () => {
+  return isPhantomBrowser() || isSolflareBrowser();
+};
+
+// Get provider function
+const getProvider = async (type: WalletProvider) => {
+  console.log(`Getting provider for ${type}`);
+  
+  // Si nous sommes dans le navigateur in-app
+  if (isInAppBrowser()) {
+    if (type === 'phantom' && isPhantomBrowser()) {
+      let attempts = 0;
+      while (!window.phantom?.solana && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+      return window.phantom?.solana;
+    }
+    if (type === 'solflare' && isSolflareBrowser()) {
+      let attempts = 0;
+      while (!window.solflare && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+      return window.solflare;
+    }
+  }
+
+  // Pour les navigateurs desktop normaux
+  try {
+    let desktopProvider = null;
+    if (type === 'phantom') {
+      desktopProvider = window?.phantom?.solana;
+    } else if (type === 'solflare') {
+      let attempts = 0;
+      while (!window.solflare && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+      desktopProvider = window.solflare;
+    }
+    
+    if (desktopProvider) {
+      console.log(`Desktop provider found for ${type}`);
+      
+      if (type === 'solflare') {
+        // Attendre un peu que le provider soit complètement initialisé
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Vérifier si le provider est prêt
+        if (typeof desktopProvider.isConnected === 'undefined') {
+          console.log('Solflare provider not ready, redirecting to download');
+          window.open('https://solflare.com/download', '_blank');
+          return null;
+        }
+      }
+      
+      return desktopProvider;
+    }
+  } catch (error) {
+    console.error('Error getting desktop provider:', error);
+  }
+
+  // Pour mobile ou si le wallet n'est pas installé
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  
+  if (isMobile) {
+    const dappUrl = window.location.href;
+    const encodedUrl = encodeURIComponent(dappUrl);
+    
+    if (type === 'phantom') {
+      window.location.href = `https://phantom.app/ul/browse/${encodedUrl}`;
+    } else if (type === 'solflare') {
+      window.location.href = `https://solflare.com/ul/v1/browse/${encodedUrl}`;
+    }
+  } else {
+    const downloadUrls = {
+      phantom: 'https://phantom.app/download',
+      solflare: 'https://solflare.com/download'
+    };
+    window.open(downloadUrls[type], '_blank');
+  }
+  
+  return null;
+};
 
 export const useWallet = () => {
   const [connection, setConnection] = useState<WalletConnection>({
@@ -79,27 +175,39 @@ export const useWallet = () => {
     if (!connection.provider || !connection.providerType) return;
 
     try {
+      // Détecter si on est sur mobile
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const isSolflareInApp = isSolflareBrowser() && isMobile;
+
       if (connection.providerType === 'solflare') {
-        // Force la déconnexion et la mise à jour de l'état
-        updateConnectionState(null, null, null);
-        
-        // Attendre un court instant avant de recharger la page
-        setTimeout(() => {
-          window.location.reload();
-        }, 100);
+        if (isSolflareInApp) {
+          // Pour Solflare mobile in-app browser
+          await connection.provider.disconnect();
+          // Réinitialiser l'état local
+          updateConnectionState(null, null, null);
+          // Ne pas recharger la page sur mobile in-app
+        } else {
+          // Pour Solflare desktop
+          updateConnectionState(null, null, null);
+          setTimeout(() => {
+            window.location.reload();
+          }, 100);
+        }
       } else {
+        // Pour les autres wallets (comme Phantom)
         await connection.provider.disconnect();
         updateConnectionState(null, null, null);
       }
     } catch (error) {
       console.error("Error during disconnect:", error);
-      // En cas d'erreur, forcer la déconnexion
+      // En cas d'erreur, forcer la déconnexion sans reload sur mobile
       updateConnectionState(null, null, null);
-      window.location.reload();
+      if (!isMobile) {
+        window.location.reload();
+      }
     }
   }, [connection.provider, connection.providerType, updateConnectionState]);
 
-  // Écouter les changements d'état du wallet
   useEffect(() => {
     const provider = connection.provider;
     if (!provider) return;
@@ -124,7 +232,6 @@ export const useWallet = () => {
       updateConnectionState(null, null, null);
     };
 
-    // Ajout des écouteurs d'événements
     provider.on('connect', handleAccountChanged);
     provider.on('disconnect', handleDisconnect);
     provider.on('accountChanged', handleAccountChanged);
