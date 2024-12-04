@@ -1,7 +1,10 @@
-import { WalletProvider, WalletAdapterSession, MobileWalletAdapterConfig } from '../types/wallet';
-import { transact } from '@solana-mobile/wallet-adapter-mobile';
-import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
+// src/utils/wallet.ts
+import { WalletProvider } from '../types/wallet';
 import { PublicKey } from '@solana/web3.js';
+import { 
+  transact, 
+  Web3MobileWallet 
+} from '@solana-mobile/mobile-wallet-adapter-protocol-web3js';
 
 declare global {
   interface Window {
@@ -30,36 +33,42 @@ export const isMobileDevice = () => {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 };
 
-const getMobileProvider = async (type: WalletProvider): Promise<WalletAdapterSession | null> => {
+const getMobileProvider = async () => {
   try {
-    const authorization = await transact(async wallet => {
-      const config: MobileWalletAdapterConfig = {
-        cluster: WalletAdapterNetwork.Mainnet,
-        appIdentity: {
-          name: "Solana Message Signer",
+    const wallet = await transact(async (wallet: Web3MobileWallet) => {
+      const auth = await wallet.authorize({
+        cluster: 'mainnet-beta',
+        identity: {
+          name: 'Solana Message Signer',
           uri: window.location.origin,
-          icon: "/solana-logo.svg"
+          icon: '/solana-logo.svg'
         }
+      });
+      
+      return {
+        wallet,
+        publicKey: new PublicKey(auth.accounts[0].address),
+        authToken: auth.auth_token
       };
-      return await wallet.authorize(config);
     });
 
-    // Créer une session avec le wallet mobile
     return {
-      publicKey: authorization.accounts[0].address,
+      publicKey: wallet.publicKey,
       signMessage: async (message: Uint8Array) => {
-        return await transact(async wallet => {
-          return await wallet.signMessage(message);
+        return await transact(async (w) => {
+          const signedMessage = await w.signMessage(message);
+          return signedMessage;
         });
       },
       disconnect: async () => {
-        await transact(async wallet => {
-          await wallet.deauthorize();
+        await transact(async (w) => {
+          await w.deauthorize();
         });
-      }
+      },
+      isConnected: true
     };
   } catch (error) {
-    console.error("Mobile wallet error:", error);
+    console.error('Mobile provider error:', error);
     return null;
   }
 };
@@ -84,12 +93,12 @@ const getDesktopProvider = async (type: WalletProvider) => {
 export const getProvider = async (type: WalletProvider) => {
   console.log(`Getting provider for ${type}`);
   
-  // Si mobile et pas dans un browser de wallet, utiliser Mobile Wallet Adapter
+  // Si mobile et pas dans un wallet browser
   if (isMobileDevice() && !isInAppBrowser()) {
-    return getMobileProvider(type);
+    return getMobileProvider();
   }
-
-  // Si dans un browser de wallet
+  
+  // Si dans un in-app browser
   if (isInAppBrowser()) {
     if (type === 'phantom' && isPhantomBrowser()) {
       let attempts = 0;
@@ -109,17 +118,18 @@ export const getProvider = async (type: WalletProvider) => {
     }
   }
 
-  // Pour les navigateurs desktop
+  // Pour desktop
   try {
     const desktopProvider = await getDesktopProvider(type);
     if (desktopProvider) {
+      await new Promise(resolve => setTimeout(resolve, 100));
       return desktopProvider;
     }
   } catch (error) {
-    console.error('Error getting desktop provider:', error);
+    console.error('Desktop provider error:', error);
   }
 
-  // Si pas de provider trouvé, ouvrir le store ou le site de téléchargement
+  // Si pas de wallet, rediriger vers store/download
   if (isMobileDevice()) {
     const storeUrls = {
       phantom: 'https://play.google.com/store/apps/details?id=app.phantom',
