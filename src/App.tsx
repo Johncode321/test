@@ -1,12 +1,11 @@
-// src/App.tsx
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { WalletContextProvider } from './contexts/WalletContextProvider';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { useMessageSigning } from './hooks/useMessageSigning';
 import { SignerPanel } from './components/SignerPanel';
+import { useMessageSigning } from './hooks/useMessageSigning';
 
 function AppContent() {
-  const { publicKey, signMessage, disconnect } = useWallet();
+  const { publicKey, disconnect, connected, signMessage } = useWallet();
+  const { connection } = useConnection();
   const { message, signature, setMessage, signMessageWithAdapter, copySignature } = useMessageSigning();
 
   return (
@@ -14,32 +13,25 @@ function AppContent() {
       <SignerPanel
         connection={{
           publicKey,
-          providerType: null,
-          provider: null
+          providerType: connected ? 'wallet-adapter' : null,
+          provider: connected ? { signMessage } : null
         }}
         message={message}
         signature={signature}
         onMessageChange={setMessage}
-        onConnect={() => {}} // Handled by WalletMultiButton
+        onConnect={() => {}} // Handled by WalletMultiButton now
         onDisconnect={disconnect}
         onSign={signMessageWithAdapter}
         onCopySignature={copySignature}
       />
-      
-      {/* Add wallet modal button */}
-      <div className="fixed top-4 right-4">
-        <WalletMultiButton />
-      </div>
     </div>
   );
 }
 
-function App() {
+export default function App() {
   return (
     <WalletContextProvider>
       <AppContent />
     </WalletContextProvider>
   );
 }
-
-export default App;
