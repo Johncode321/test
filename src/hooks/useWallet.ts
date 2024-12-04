@@ -17,14 +17,6 @@ const isInAppBrowser = () => {
   return isPhantomBrowser() || isSolflareBrowser();
 };
 
-// Fonction pour créer le deep link
-const createDeepLink = (type: WalletProvider, returnUrl: string) => {
-  const encodedUrl = encodeURIComponent(returnUrl);
-  return type === 'phantom'
-    ? `https://phantom.app/ul/v1/connect?app_url=${encodedUrl}`
-    : `https://solflare.com/ul/v1/connect?ref=${encodedUrl}`;
-};
-
 // Get provider function
 const getProvider = async (type: WalletProvider) => {
   console.log(`Getting provider for ${type}`);
@@ -35,8 +27,21 @@ const getProvider = async (type: WalletProvider) => {
   // Si on est sur mobile mais pas dans un wallet browser
   if (isMobile && isStandaloneBrowser) {
     const currentUrl = window.location.href;
-    const deepLink = createDeepLink(type, currentUrl);
-    window.location.href = deepLink;
+    const encodedUrl = encodeURIComponent(currentUrl);
+    const encodedName = encodeURIComponent("Solana Message Signer");
+    const encodedIcon = encodeURIComponent(`${window.location.origin}/favicon.ico`);
+
+    if (type === 'phantom') {
+      window.location.href = `https://phantom.app/ul/connect?app_url=${encodedUrl}&dapp_url=${encodedUrl}&redirect_url=${encodedUrl}`;
+    } else {
+      const params = {
+        dapp_url: encodedUrl,
+        redirect_url: encodedUrl,
+        app_name: encodedName,
+        app_icon: encodedIcon,
+      };
+      window.location.href = `solflare://connect?${new URLSearchParams(params).toString()}`;
+    }
     return null;
   }
   
