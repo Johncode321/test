@@ -1,5 +1,3 @@
-// src/utils/wallet.ts
-
 import { WalletProvider } from '../types/wallet';
 
 declare global {
@@ -30,7 +28,6 @@ const getDesktopProvider = async (type: WalletProvider) => {
     case 'phantom':
       return window?.phantom?.solana;
     case 'solflare': {
-      // Attendre que Solflare soit disponible
       let attempts = 0;
       while (!window.solflare && attempts < 50) {
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -46,7 +43,7 @@ const getDesktopProvider = async (type: WalletProvider) => {
 export const getProvider = async (type: WalletProvider) => {
   console.log(`Getting provider for ${type}`);
   
-  // Si nous sommes dans le navigateur in-app
+  // Check if we're in an in-app browser
   if (isInAppBrowser()) {
     if (type === 'phantom' && isPhantomBrowser()) {
       let attempts = 0;
@@ -66,44 +63,34 @@ export const getProvider = async (type: WalletProvider) => {
     }
   }
 
-  // Pour les navigateurs desktop normaux
+  // For desktop browsers
   try {
     const desktopProvider = await getDesktopProvider(type);
-    
     if (desktopProvider) {
-      console.log(`Desktop provider found for ${type}`);
-      
-      if (type === 'solflare') {
-        // Attendre un peu que le provider soit complètement initialisé
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
-        // Vérifier si le provider est prêt
-        if (typeof desktopProvider.isConnected === 'undefined') {
-          console.log('Solflare provider not ready, redirecting to download');
-          window.open('https://solflare.com/download', '_blank');
-          return null;
-        }
-      }
-      
       return desktopProvider;
     }
   } catch (error) {
     console.error('Error getting desktop provider:', error);
   }
 
-  // Pour mobile ou si le wallet n'est pas installé
+  // For mobile or if wallet is not installed
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   
   if (isMobile) {
-    const dappUrl = window.location.href;
+    // The URL you want to open in the wallet's browser
+    const dappUrl = 'https://test-beta-rouge-19.vercel.app/';
     const encodedUrl = encodeURIComponent(dappUrl);
+    const ref = encodeURIComponent(window.location.origin);
     
-    if (type === 'phantom') {
-      window.location.href = `https://phantom.app/ul/browse/${encodedUrl}`;
-    } else if (type === 'solflare') {
-      window.location.href = `https://solflare.com/ul/v1/browse/${encodedUrl}`;
+    if (type === 'solflare') {
+      // Construct Solflare deeplink according to documentation
+      const deeplink = `https://solflare.com/ul/v1/browse/${encodedUrl}?ref=${ref}`;
+      window.location.href = deeplink;
+    } else if (type === 'phantom') {
+      window.location.href = `https://phantom.app/ul/browse/${encodedUrl}?ref=${ref}`;
     }
   } else {
+    // For desktop: open wallet download page if not installed
     const downloadUrls = {
       phantom: 'https://phantom.app/download',
       solflare: 'https://solflare.com/download'
