@@ -1,5 +1,3 @@
-// src/hooks/useWallet.ts
-
 import { useState, useEffect, useCallback } from 'react';
 import { PublicKey } from '@solana/web3.js';
 import { WalletConnection, WalletProvider } from '../types/wallet';
@@ -19,9 +17,28 @@ const isInAppBrowser = () => {
   return isPhantomBrowser() || isSolflareBrowser();
 };
 
+// Fonction pour créer le deep link
+const createDeepLink = (type: WalletProvider, returnUrl: string) => {
+  const encodedUrl = encodeURIComponent(returnUrl);
+  return type === 'phantom'
+    ? `https://phantom.app/ul/v1/connect?app_url=${encodedUrl}`
+    : `https://solflare.com/ul/v1/connect?ref=${encodedUrl}`;
+};
+
 // Get provider function
 const getProvider = async (type: WalletProvider) => {
   console.log(`Getting provider for ${type}`);
+  
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const isStandaloneBrowser = !isInAppBrowser();
+
+  // Si on est sur mobile mais pas dans un wallet browser
+  if (isMobile && isStandaloneBrowser) {
+    const currentUrl = window.location.href;
+    const deepLink = createDeepLink(type, currentUrl);
+    window.location.href = deepLink;
+    return null;
+  }
   
   if (isInAppBrowser()) {
     if (type === 'phantom' && isPhantomBrowser()) {
@@ -64,19 +81,8 @@ const getProvider = async (type: WalletProvider) => {
     console.error('Error getting desktop provider:', error);
   }
 
-  // Pour mobile ou si le wallet n'est pas installé
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  
-  if (isMobile) {
-    const dappUrl = window.location.href;
-    const encodedUrl = encodeURIComponent(dappUrl);
-    
-    if (type === 'phantom') {
-      window.location.href = `https://phantom.app/ul/browse/${encodedUrl}`;
-    } else if (type === 'solflare') {
-      window.location.href = `https://solflare.com/ul/v1/browse/${encodedUrl}`;
-    }
-  } else {
+  // Si on est sur desktop et que le wallet n'est pas installé
+  if (!isMobile) {
     const downloadUrls = {
       phantom: 'https://phantom.app/download',
       solflare: 'https://solflare.com/download'
