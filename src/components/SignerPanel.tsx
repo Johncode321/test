@@ -3,8 +3,8 @@ import { Button } from './Button';
 import { MessageInput } from './MessageInput';
 import { SignatureDisplay } from './SignatureDisplay';
 import { WalletInfo } from './WalletInfo';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { PenSquare, ExternalLink } from 'lucide-react';
+import { isInAppBrowser, isPhantomBrowser, isSolflareBrowser } from '../utils/wallet';
 import { SolanaLogo } from './SolanaLogo';
 
 interface SignerPanelProps {
@@ -23,11 +23,74 @@ export const SignerPanel = ({
   message,
   signature,
   onMessageChange,
+  onConnect,
   onDisconnect,
   onSign,
   onCopySignature,
 }: SignerPanelProps) => {
+  const inAppBrowser = isInAppBrowser();
+  const isPhantom = isPhantomBrowser();
+  const isSolflare = isSolflareBrowser();
   const isConnected = !!connection.publicKey;
+
+  const renderWalletButtons = () => {
+    if (inAppBrowser) {
+      if (isPhantom) {
+        return (
+          <Button 
+            variant="primary" 
+            onClick={() => onConnect('phantom')}
+            className="bg-gradient-to-r from-purple-600 to-purple-700"
+          >
+            Connect with Phantom
+          </Button>
+        );
+      }
+      if (isSolflare) {
+        return (
+          <Button 
+            variant="primary" 
+            onClick={() => onConnect('solflare')}
+            className="bg-gradient-to-r from-orange-500 to-orange-600"
+          >
+            Connect with Solflare
+          </Button>
+        );
+      }
+    }
+
+    return (
+      <>
+        <Button 
+          variant="primary" 
+          onClick={() => onConnect('phantom')}
+          className="bg-gradient-to-r from-purple-600 to-purple-700 flex items-center justify-center gap-2"
+        >
+          {!inAppBrowser ? (
+            <>
+              Open in Phantom <ExternalLink size={16} />
+            </>
+          ) : (
+            'Connect with Phantom'
+          )}
+        </Button>
+        
+        <Button 
+          variant="primary" 
+          onClick={() => onConnect('solflare')}
+          className="bg-gradient-to-r from-orange-500 to-orange-600 flex items-center justify-center gap-2"
+        >
+          {!inAppBrowser ? (
+            <>
+              Open in Solflare <ExternalLink size={16} />
+            </>
+          ) : (
+            'Connect with Solflare'
+          )}
+        </Button>
+      </>
+    );
+  };
 
   return (
     <div className="w-full max-w-md bg-gray-800/50 backdrop-blur-lg p-8 rounded-2xl border border-gray-700 shadow-xl">
@@ -38,12 +101,14 @@ export const SignerPanel = ({
               <SolanaLogo className="w-20 h-20" />
             </div>
             <h1 className="text-2xl font-bold text-white mb-2">Solana Message Signer</h1>
-            <p className="text-gray-400 text-sm">Connect your wallet to continue</p>
+            <p className="text-gray-400 text-sm">
+              {inAppBrowser 
+                ? "Connect with your wallet"
+                : "Open in your preferred wallet"}
+            </p>
           </div>
           
-          <div className="space-y-4">
-            <WalletMultiButton className="w-full px-6 py-3.5 rounded-xl text-sm font-medium bg-gradient-to-r from-purple-600 to-purple-700" />
-          </div>
+          {renderWalletButtons()}
         </div>
       ) : (
         <div className="space-y-4">
@@ -53,7 +118,7 @@ export const SignerPanel = ({
             </div>
             <div>
               <h2 className="text-lg font-bold text-white">Sign Message</h2>
-              <p className="text-gray-400 text-sm">Wallet Connected</p>
+              <p className="text-gray-400 text-sm">Connected with {connection.providerType}</p>
             </div>
           </div>
           
