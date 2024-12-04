@@ -1,3 +1,50 @@
+import { useState, useEffect } from 'react';
+import { encode } from 'bs58';
+import { WalletConnection } from '../types/wallet';
+
+export const useMessageSigning = (connection: WalletConnection) => {
+  const [message, setMessage] = useState('');
+  const [signature, setSignature] = useState('');
+
+  // Réinitialiser l'état quand le wallet change
+  useEffect(() => {
+    setMessage('');
+    setSignature('');
+  }, [connection.publicKey, connection.providerType]);
+
+  const signMessage = async () => {
+    if (!connection.provider || !message) return;
+    try {
+      const encodedMessage = new TextEncoder().encode(message);
+      const signedMessage = await connection.provider.signMessage(encodedMessage, "utf8");
+      const base58Signature = encode(signedMessage.signature);
+      setSignature(base58Signature);
+    } catch (error) {
+      console.error("Error signing:", error);
+      setSignature(''); // Réinitialiser la signature en cas d'erreur
+    }
+  };
+
+  const copySignature = async () => {
+    if (signature) {
+      await navigator.clipboard.writeText(signature);
+    }
+  };
+
+  return {
+    message,
+    signature,
+    setMessage,
+    signMessage,
+    copySignature
+  };
+};
+
+-----
+
+src/hooks/useWallet.ts
+
+
 import { useState, useEffect, useCallback } from 'react';
 import { PublicKey } from '@solana/web3.js';
 import { WalletConnection, WalletProvider } from '../types/wallet';
@@ -27,13 +74,20 @@ const getProvider = async (type: WalletProvider) => {
   // Si on est sur mobile mais pas dans un wallet browser
   if (isMobile && isStandaloneBrowser) {
     const currentUrl = window.location.href;
-    const url = encodeURIComponent(currentUrl);
-    const ref = encodeURIComponent(window.location.origin);
+    const encodedUrl = encodeURIComponent(currentUrl);
+    const encodedName = encodeURIComponent("Solana Message Signer");
+    const encodedIcon = encodeURIComponent(`${window.location.origin}/favicon.ico`);
 
     if (type === 'phantom') {
-      window.location.href = `https://phantom.app/ul/browse/${url}?ref=${ref}`;
+      window.location.href = `https://phantom.app/ul/connect?app_url=${encodedUrl}&dapp_url=${encodedUrl}&redirect_url=${encodedUrl}`;
     } else {
-      window.location.href = `https://solflare.com/v1/ul/browse/${url}?ref=${ref}`;
+      const params = {
+        dapp_url: encodedUrl,
+        redirect_url: encodedUrl,
+        app_name: encodedName,
+        app_icon: encodedIcon,
+      };
+      window.location.href = `solflare://connect?${new URLSearchParams(params).toString()}`;
     }
     return null;
   }
