@@ -28,12 +28,14 @@ const getProvider = async (type: WalletProvider) => {
   if (isMobile && isStandaloneBrowser) {
     const currentUrl = window.location.href;
     const url = encodeURIComponent(currentUrl);
-    const ref = encodeURIComponent(window.location.origin);
 
     if (type === 'phantom') {
-      window.location.href = `https://phantom.app/ul/browse/${url}?ref=${ref}`;
+      window.location.href = `https://phantom.app/ul/browse/${url}?ref=${encodeURIComponent(window.location.origin)}`;
     } else {
-      window.location.href = `https://solflare.com/ul/browse/${url}?ref=${ref}`;
+      const params = new URLSearchParams({
+        ref: window.location.origin
+      });
+      window.location.href = `solflare://v1/browse/${url}?${params.toString()}`;
     }
     return null;
   }
