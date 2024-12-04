@@ -1,163 +1,115 @@
-// src/hooks/useWallet.ts
+// src/utils/wallet.ts
 
-import { useState, useEffect, useCallback } from 'react';
-import { PublicKey } from '@solana/web3.js';
-import { WalletConnection, WalletProvider } from '../types/wallet';
-import { getProvider, isInAppBrowser, isSolflareBrowser } from '../utils/wallet';
+import { WalletProvider } from '../types/wallet';
 
-export const useWallet = () => {
-  const [connection, setConnection] = useState<WalletConnection>({
-    provider: null,
-    publicKey: null,
-    providerType: null
-  });
+declare global {
+  interface Window {
+    phantom?: {
+      solana?: any;
+    };
+    solflare?: any;
+  }
+}
 
-  const updateConnectionState = useCallback((
-    provider: any,
-    publicKey: PublicKey | null, 
-    type: WalletProvider | null
-  ) => {
-    setConnection({
-      provider,
-      publicKey,
-      providerType: type
-    });
-  }, []);
+export const isPhantomBrowser = () => {
+  const userAgent = navigator.userAgent.toLowerCase();
+  return userAgent.includes('phantom');
+};
 
-  const connectWallet = useCallback(async (type: WalletProvider) => {
-    try {
-      const provider = await getProvider(type);
-      if (!provider) return;
+export const isSolflareBrowser = () => {
+  const userAgent = navigator.userAgent.toLowerCase();
+  return userAgent.includes('solflare');
+};
 
-      // Pour Solflare spécifiquement
-      if (type === 'solflare') {
-        try {
-          // Vérifier d'abord si déjà connecté
-          if (provider.isConnected) {
-            const publicKey = await provider.publicKey;
-            if (publicKey) {
-              console.log("Solflare already connected, updating state");
-              updateConnectionState(provider, publicKey, type);
-              return;
-            }
-          }
+export const isInAppBrowser = () => {
+  return isPhantomBrowser() || isSolflareBrowser();
+};
 
-          // Si non connecté, tenter la connexion
-          console.log("Attempting Solflare connection");
-          const response = await provider.connect();
-          
-          // Attendre un peu pour s'assurer que la connexion est établie
-          await new Promise(resolve => setTimeout(resolve, 200));
-          
-          // Vérifier à nouveau la connexion
-          const publicKey = await provider.publicKey;
-          if (publicKey) {
-            console.log("Solflare connection successful");
-            updateConnectionState(provider, publicKey, type);
-            return;
-          }
-        } catch (error) {
-          console.error("Solflare specific error:", error);
-          throw error;
-        }
-      } 
+const getDesktopProvider = async (type: WalletProvider) => {
+  switch (type) {
+    case 'phantom':
+      return window?.phantom?.solana;
+    case 'solflare': {
+      // Attendre que Solflare soit disponible
+      let attempts = 0;
+      while (!window.solflare && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+      return window.solflare;
+    }
+    default:
+      return null;
+  }
+};
+
+export const getProvider = async (type: WalletProvider) => {
+  console.log(`Getting provider for ${type}`);
+  
+  // Si nous sommes dans le navigateur in-app
+  if (isInAppBrowser()) {
+    if (type === 'phantom' && isPhantomBrowser()) {
+      let attempts = 0;
+      while (!window.phantom?.solana && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+      return window.phantom?.solana;
+    }
+    if (type === 'solflare' && isSolflareBrowser()) {
+      let attempts = 0;
+      while (!window.solflare && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+      return window.solflare;
+    }
+  }
+
+  // Pour les navigateurs desktop normaux
+  try {
+    const desktopProvider = await getDesktopProvider(type);
+    
+    if (desktopProvider) {
+      console.log(`Desktop provider found for ${type}`);
       
-      // Pour les autres wallets (Phantom, etc.)
-      else {
-        const response = await provider.connect();
-        if (response?.publicKey) {
-          updateConnectionState(provider, response.publicKey, type);
-        }
-      }
-    } catch (error) {
-      console.error(`Error connecting to ${type}:`, error);
-      updateConnectionState(null, null, null);
-    }
-  }, [updateConnectionState]);
-
-  const disconnectWallet = useCallback(async () => {
-    if (!connection.provider || !connection.providerType) return;
-
-    try {
-      if (connection.providerType === 'solflare') {
-        // Force la déconnexion et la mise à jour de l'état
-        updateConnectionState(null, null, null);
+      if (type === 'solflare') {
+        // Attendre un peu que le provider soit complètement initialisé
+        await new Promise(resolve => setTimeout(resolve, 200));
         
-        // Attendre un court instant avant de recharger la page
-        setTimeout(() => {
-          window.location.reload();
-        }, 100);
-      } else {
-        await connection.provider.disconnect();
-        updateConnectionState(null, null, null);
+        // Vérifier si le provider est prêt
+        if (typeof desktopProvider.isConnected === 'undefined') {
+          console.log('Solflare provider not ready, redirecting to download');
+          window.open('https://solflare.com/download', '_blank');
+          return null;
+        }
       }
-    } catch (error) {
-      console.error("Error during disconnect:", error);
-      // En cas d'erreur, forcer la déconnexion
-      updateConnectionState(null, null, null);
-      window.location.reload();
+      
+      return desktopProvider;
     }
-  }, [connection.provider, connection.providerType, updateConnectionState]);
+  } catch (error) {
+    console.error('Error getting desktop provider:', error);
+  }
 
-  // Écouter les changements d'état du wallet
-  useEffect(() => {
-    const provider = connection.provider;
-    if (!provider) return;
-
-    const handleAccountChanged = async (publicKey: PublicKey | null) => {
-      if (publicKey) {
-        updateConnectionState(provider, publicKey, connection.providerType);
-      } else {
-        // Si publicKey est null, vérifier si toujours connecté (pour Solflare)
-        if (connection.providerType === 'solflare' && provider.isConnected) {
-          const currentKey = await provider.publicKey;
-          if (currentKey) {
-            updateConnectionState(provider, currentKey, connection.providerType);
-            return;
-          }
-        }
-        updateConnectionState(null, null, null);
-      }
+  // Pour mobile ou si le wallet n'est pas installé
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  
+  if (isMobile) {
+    const dappUrl = window.location.href;
+    const encodedUrl = encodeURIComponent(dappUrl);
+    
+    if (type === 'phantom') {
+      window.location.href = `https://phantom.app/ul/browse/${encodedUrl}`;
+    } else if (type === 'solflare') {
+      window.location.href = `https://solflare.com/ul/v1/browse/${encodedUrl}`;
+    }
+  } else {
+    const downloadUrls = {
+      phantom: 'https://phantom.app/download',
+      solflare: 'https://solflare.com/download'
     };
-
-    const handleDisconnect = () => {
-      updateConnectionState(null, null, null);
-    };
-
-    // Ajout des écouteurs d'événements
-    provider.on('connect', handleAccountChanged);
-    provider.on('disconnect', handleDisconnect);
-    provider.on('accountChanged', handleAccountChanged);
-
-    return () => {
-      provider.removeAllListeners?.('connect');
-      provider.removeAllListeners?.('disconnect');
-      provider.removeAllListeners?.('accountChanged');
-    };
-  }, [connection.provider, connection.providerType, updateConnectionState]);
-
-  // Effet pour vérifier la connexion automatiquement au chargement
-  useEffect(() => {
-    const checkInitialConnection = async () => {
-      if (window.solflare && window.solflare.isConnected) {
-        try {
-          const publicKey = await window.solflare.publicKey;
-          if (publicKey) {
-            updateConnectionState(window.solflare, publicKey, 'solflare');
-          }
-        } catch (error) {
-          console.error("Error checking initial Solflare connection:", error);
-        }
-      }
-    };
-
-    checkInitialConnection();
-  }, [updateConnectionState]);
-
-  return {
-    connection,
-    connectWallet,
-    disconnectWallet,
-    isInAppBrowser: isInAppBrowser()
-  };
+    window.open(downloadUrls[type], '_blank');
+  }
+  
+  return null;
 };
