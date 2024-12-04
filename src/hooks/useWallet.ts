@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { PublicKey } from '@solana/web3.js';
 import { WalletConnection, WalletProvider } from '../types/wallet';
+import { transact } from '@solana-mobile/wallet-adapter-mobile';
+import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 
 // Utility functions
 const isPhantomBrowser = () => {
@@ -17,29 +19,63 @@ const isInAppBrowser = () => {
   return isPhantomBrowser() || isSolflareBrowser();
 };
 
+const isMobileDevice = () => {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+};
+
+// Mobile Wallet Adapter implementation
+const getMobileWalletHandle = async () => {
+  try {
+    return await transact(async (wallet) => {
+      const authResult = await wallet.authorize({
+        cluster: WalletAdapterNetwork.Mainnet,
+        identity: {
+          name: "Solana Message Signer",
+          uri: window.location.origin,
+          icon: "/solana-logo.svg"
+        }
+      });
+      return { wallet, authResult };
+    });
+  } catch (error) {
+    console.error("Mobile wallet authorization error:", error);
+    return null;
+  }
+};
+
 // Get provider function
 const getProvider = async (type: WalletProvider) => {
   console.log(`Getting provider for ${type}`);
   
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  const isStandaloneBrowser = !isInAppBrowser();
+  const isMobile = isMobileDevice();
+  const isStandalone = !isInAppBrowser();
 
-  // Si on est sur mobile mais pas dans un wallet browser
-  if (isMobile && isStandaloneBrowser) {
-    const currentUrl = window.location.href;
-    const url = encodeURIComponent(currentUrl);
-
-    if (type === 'phantom') {
-      window.location.href = `https://phantom.app/ul/browse/${url}?ref=${encodeURIComponent(window.location.origin)}`;
-    } else {
-      const params = new URLSearchParams({
-        ref: window.location.origin
-      });
-      window.location.href = `solflare://v1/browse/${url}?${params.toString()}`;
+  // Si mobile et pas dans un wallet browser, utiliser Mobile Wallet Adapter
+  if (isMobile && isStandalone) {
+    const mobileHandle = await getMobileWalletHandle();
+    if (mobileHandle) {
+      const { wallet, authResult } = mobileHandle;
+      return {
+        publicKey: new PublicKey(authResult.accounts[0].address),
+        signMessage: async (message: Uint8Array) => {
+          return await transact(async (w) => {
+            return await w.signMessage(message);
+          });
+        },
+        disconnect: async () => {
+          await transact(async (w) => {
+            await w.deauthorize();
+          });
+        },
+        on: () => {},
+        removeAllListeners: () => {},
+        isConnected: true
+      };
     }
     return null;
   }
   
+  // Si dans un wallet browser
   if (isInAppBrowser()) {
     if (type === 'phantom' && isPhantomBrowser()) {
       let attempts = 0;
@@ -59,7 +95,7 @@ const getProvider = async (type: WalletProvider) => {
     }
   }
 
-  // Pour les navigateurs desktop
+  // Pour desktop
   try {
     let provider = null;
     if (type === 'solflare') {
@@ -81,8 +117,14 @@ const getProvider = async (type: WalletProvider) => {
     console.error('Error getting desktop provider:', error);
   }
 
-  // Si on est sur desktop et que le wallet n'est pas installé
-  if (!isMobile) {
+  // Si pas de wallet, rediriger vers store/download
+  if (isMobile) {
+    const storeUrls = {
+      phantom: 'https://play.google.com/store/apps/details?id=app.phantom',
+      solflare: 'https://play.google.com/store/apps/details?id=com.solflare.mobile'
+    };
+    window.location.href = storeUrls[type];
+  } else {
     const downloadUrls = {
       phantom: 'https://phantom.app/download',
       solflare: 'https://solflare.com/download'
@@ -117,33 +159,29 @@ export const useWallet = () => {
       const provider = await getProvider(type);
       if (!provider) return;
 
-      // Pour Solflare spécifiquement
-      if (type === 'solflare') {
-        try {
-          // Si déjà connecté, mettre à jour l'état
-          if (provider.isConnected) {
-            console.log("Solflare already connected, getting publicKey");
-            const publicKey = await provider.publicKey;
-            if (publicKey) {
-              updateConnectionState(provider, publicKey, type);
-              return;
-            }
-          }
+      // Si provider mobile
+      if (provider.publicKey instanceof PublicKey) {
+        updateConnectionState(provider, provider.publicKey, type);
+        return;
+      }
 
-          console.log("Attempting Solflare connection");
-          const response = await provider.connect();
-          await new Promise(resolve => setTimeout(resolve, 200));
-          
-          const publicKey = response?.publicKey || await provider.publicKey;
+      // Pour Solflare
+      if (type === 'solflare') {
+        if (provider.isConnected) {
+          const publicKey = await provider.publicKey;
           if (publicKey) {
-            console.log("Solflare connection successful");
             updateConnectionState(provider, publicKey, type);
+            return;
           }
-        } catch (error) {
-          console.error("Solflare specific error:", error);
-          throw error;
+        }
+
+        const response = await provider.connect();
+        const publicKey = response?.publicKey || await provider.publicKey;
+        if (publicKey) {
+          updateConnectionState(provider, publicKey, type);
         }
       } else {
+        // Pour Phantom
         const response = await provider.connect();
         if (response?.publicKey) {
           updateConnectionState(provider, response.publicKey, type);
@@ -159,24 +197,10 @@ export const useWallet = () => {
     if (!connection.provider || !connection.providerType) return;
 
     try {
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      const isSolflareInApp = isSolflareBrowser() && isMobile;
-
-      // Pour Solflare sur mobile
-      if (connection.providerType === 'solflare' && isSolflareInApp) {
-        try {
-          await connection.provider.disconnect();
-          updateConnectionState(null, null, null);
-          // Pas de reload pour mobile
-        } catch (error) {
-          console.error("Error disconnecting Solflare mobile:", error);
-          // Force disconnect
-          updateConnectionState(null, null, null);
-        }
-      } else {
-        // Pour desktop et autres wallets
-        await connection.provider.disconnect();
-        updateConnectionState(null, null, null);
+      await connection.provider.disconnect();
+      updateConnectionState(null, null, null);
+      
+      if (!isMobileDevice()) {
         setTimeout(() => window.location.reload(), 100);
       }
     } catch (error) {
@@ -185,7 +209,6 @@ export const useWallet = () => {
     }
   }, [connection.provider, connection.providerType, updateConnectionState]);
 
-  // Event listeners
   useEffect(() => {
     const provider = connection.provider;
     if (!provider) return;
@@ -209,21 +232,24 @@ export const useWallet = () => {
       updateConnectionState(null, null, null);
     };
 
-    provider.on('connect', handleAccountChanged);
-    provider.on('disconnect', handleDisconnect);
-    provider.on('accountChanged', handleAccountChanged);
+    if (provider.on) {
+      provider.on('connect', handleAccountChanged);
+      provider.on('disconnect', handleDisconnect);
+      provider.on('accountChanged', handleAccountChanged);
 
-    return () => {
-      provider.removeAllListeners?.('connect');
-      provider.removeAllListeners?.('disconnect');
-      provider.removeAllListeners?.('accountChanged');
-    };
+      return () => {
+        provider.removeAllListeners?.('connect');
+        provider.removeAllListeners?.('disconnect');
+        provider.removeAllListeners?.('accountChanged');
+      };
+    }
   }, [connection.provider, connection.providerType, updateConnectionState]);
 
   return {
     connection,
     connectWallet,
     disconnectWallet,
-    isInAppBrowser: isInAppBrowser()
+    isInAppBrowser: isInAppBrowser(),
+    isMobileDevice: isMobileDevice()
   };
 };
