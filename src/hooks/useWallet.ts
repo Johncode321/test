@@ -27,12 +27,13 @@ const getProvider = async (type: WalletProvider) => {
   // Si on est sur mobile mais pas dans un wallet browser
   if (isMobile && isStandaloneBrowser) {
     const currentUrl = window.location.href;
-    const encodedUrl = encodeURIComponent(currentUrl);
+    const url = encodeURIComponent(currentUrl);
+    const ref = encodeURIComponent(window.location.origin);
 
     if (type === 'phantom') {
-      window.location.href = `https://phantom.app/ul/browse/${encodedUrl}`;
+      window.location.href = `https://phantom.app/ul/browse/${url}?ref=${ref}`;
     } else {
-      window.location.href = `https://solflare.com/ul/browse/${encodedUrl}`;
+      window.location.href = `https://solflare.com/ul/browse/${url}?ref=${ref}`;
     }
     return null;
   }
