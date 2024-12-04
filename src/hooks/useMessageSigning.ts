@@ -1,24 +1,28 @@
 // src/hooks/useMessageSigning.ts
-import { useState } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
-import base58 from 'bs58';
+import { useState, useEffect } from 'react';
+import { encode } from 'bs58';
+import { WalletConnection } from '../types/wallet';
 
-export const useMessageSigning = () => {
-  const { signMessage } = useWallet();
+export const useMessageSigning = (connection: WalletConnection) => {
   const [message, setMessage] = useState('');
   const [signature, setSignature] = useState('');
 
-  const signMessageWithAdapter = async () => {
-    try {
-      if (!signMessage || !message) return;
+  // Réinitialiser l'état quand le wallet change
+  useEffect(() => {
+    setMessage('');
+    setSignature('');
+  }, [connection.publicKey, connection.providerType]);
 
+  const signMessage = async () => {
+    if (!connection.provider || !message) return;
+    try {
       const encodedMessage = new TextEncoder().encode(message);
-      const signatureBytes = await signMessage(encodedMessage);
-      const base58Signature = base58.encode(signatureBytes);
+      const signedMessage = await connection.provider.signMessage(encodedMessage, "utf8");
+      const base58Signature = encode(signedMessage.signature);
       setSignature(base58Signature);
     } catch (error) {
-      console.error('Error signing message:', error);
-      setSignature('');
+      console.error("Error signing:", error);
+      setSignature(''); // Réinitialiser la signature en cas d'erreur
     }
   };
 
@@ -32,7 +36,7 @@ export const useMessageSigning = () => {
     message,
     signature,
     setMessage,
-    signMessageWithAdapter,
+    signMessage,
     copySignature
   };
 };
