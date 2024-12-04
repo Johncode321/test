@@ -1,11 +1,10 @@
-import { WalletConnection } from '../types/wallet';
-import { Button } from './Button';
+// src/components/SignerPanel.tsx
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { MessageInput } from './MessageInput';
 import { SignatureDisplay } from './SignatureDisplay';
 import { WalletInfo } from './WalletInfo';
-import { PenSquare, ExternalLink } from 'lucide-react';
-import { isInAppBrowser, isPhantomBrowser, isSolflareBrowser } from '../utils/wallet';
-import { SolanaLogo } from './SolanaLogo';
+import { PenSquare } from 'lucide-react';
+import { WalletConnection } from '../types/wallet';
 
 interface SignerPanelProps {
   connection: WalletConnection;
@@ -23,92 +22,23 @@ export const SignerPanel = ({
   message,
   signature,
   onMessageChange,
-  onConnect,
   onDisconnect,
   onSign,
   onCopySignature,
 }: SignerPanelProps) => {
-  const inAppBrowser = isInAppBrowser();
-  const isPhantom = isPhantomBrowser();
-  const isSolflare = isSolflareBrowser();
   const isConnected = !!connection.publicKey;
-
-  const renderWalletButtons = () => {
-    if (inAppBrowser) {
-      if (isPhantom) {
-        return (
-          <Button 
-            variant="primary" 
-            onClick={() => onConnect('phantom')}
-            className="bg-gradient-to-r from-purple-600 to-purple-700"
-          >
-            Connect with Phantom
-          </Button>
-        );
-      }
-      if (isSolflare) {
-        return (
-          <Button 
-            variant="primary" 
-            onClick={() => onConnect('solflare')}
-            className="bg-gradient-to-r from-orange-500 to-orange-600"
-          >
-            Connect with Solflare
-          </Button>
-        );
-      }
-    }
-
-    return (
-      <>
-        <Button 
-          variant="primary" 
-          onClick={() => onConnect('phantom')}
-          className="bg-gradient-to-r from-purple-600 to-purple-700 flex items-center justify-center gap-2"
-        >
-          {!inAppBrowser ? (
-            <>
-              Open in Phantom <ExternalLink size={16} />
-            </>
-          ) : (
-            'Connect with Phantom'
-          )}
-        </Button>
-        
-        <Button 
-          variant="primary" 
-          onClick={() => onConnect('solflare')}
-          className="bg-gradient-to-r from-orange-500 to-orange-600 flex items-center justify-center gap-2"
-        >
-          {!inAppBrowser ? (
-            <>
-              Open in Solflare <ExternalLink size={16} />
-            </>
-          ) : (
-            'Connect with Solflare'
-          )}
-        </Button>
-      </>
-    );
-  };
 
   return (
     <div className="w-full max-w-md bg-gray-800/50 backdrop-blur-lg p-8 rounded-2xl border border-gray-700 shadow-xl">
       {!isConnected ? (
         <div className="space-y-6">
           <div className="text-center">
-            <div className="mb-6 flex justify-center">
-              <SolanaLogo className="w-20 h-20" />
-            </div>
             <h1 className="text-2xl font-bold text-white mb-2">Solana Message Signer</h1>
-            <p className="text-gray-400 text-sm">
-              {inAppBrowser 
-                ? "Connect with your wallet"
-                : "Open in your preferred wallet"}
-            </p>
+            <p className="text-gray-400 text-sm">Connect your wallet to continue</p>
           </div>
-          
-          {renderWalletButtons()}
+          <div className="flex justify-center">
+            <WalletMultiButton />
+          </div>
         </div>
       ) : (
         <div className="space-y-4">
@@ -118,7 +48,7 @@ export const SignerPanel = ({
             </div>
             <div>
               <h2 className="text-lg font-bold text-white">Sign Message</h2>
-              <p className="text-gray-400 text-sm">Connected with {connection.providerType}</p>
+              <p className="text-gray-400 text-sm">Connected with wallet</p>
             </div>
           </div>
           
@@ -129,14 +59,17 @@ export const SignerPanel = ({
             onChange={onMessageChange}
           />
           
-          <Button
-            variant="primary"
+          <button
             onClick={onSign}
             disabled={!message}
-            className="bg-gradient-to-r from-purple-600 to-purple-700"
+            className="w-full px-6 py-3.5 rounded-xl text-sm font-medium 
+              bg-gradient-to-r from-purple-600 to-purple-700 
+              text-white shadow-lg shadow-purple-600/20
+              disabled:opacity-50 disabled:cursor-not-allowed
+              transform active:scale-[0.98] transition-all duration-200"
           >
             Sign Message
-          </Button>
+          </button>
 
           {signature && (
             <SignatureDisplay
@@ -145,12 +78,15 @@ export const SignerPanel = ({
             />
           )}
           
-          <Button 
+          <button 
             onClick={onDisconnect}
-            className="!bg-transparent border border-gray-600 hover:bg-gray-700/50"
+            className="w-full px-6 py-3.5 rounded-xl text-sm font-medium
+              bg-transparent border border-gray-600 text-white
+              hover:bg-gray-700/50 transform active:scale-[0.98] 
+              transition-all duration-200"
           >
             Disconnect
-          </Button>
+          </button>
         </div>
       )}
     </div>
