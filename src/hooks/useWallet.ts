@@ -1,7 +1,97 @@
-// src/hooks/useWallet.ts
 import { useState, useEffect, useCallback } from 'react';
 import { PublicKey } from '@solana/web3.js';
 import { WalletConnection, WalletProvider } from '../types/wallet';
+
+// Utility functions
+const isPhantomBrowser = () => {
+  const userAgent = navigator.userAgent.toLowerCase();
+  return userAgent.includes('phantom');
+};
+
+const isSolflareBrowser = () => {
+  const userAgent = navigator.userAgent.toLowerCase();
+  return userAgent.includes('solflare');
+};
+
+const isInAppBrowser = () => {
+  return isPhantomBrowser() || isSolflareBrowser();
+};
+
+// Get provider function
+const getProvider = async (type: WalletProvider) => {
+  console.log(`Getting provider for ${type}`);
+  
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const isStandaloneBrowser = !isInAppBrowser();
+
+  // Si on est sur mobile mais pas dans un wallet browser
+  if (isMobile && isStandaloneBrowser) {
+    const currentUrl = window.location.href;
+    const url = encodeURIComponent(currentUrl);
+
+    if (type === 'phantom') {
+      window.location.href = `https://phantom.app/ul/browse/${url}?ref=${encodeURIComponent(window.location.origin)}`;
+    } else {
+      const params = new URLSearchParams({
+        ref: window.location.origin
+      });
+      window.location.href = `solflare://v1/browse/${url}?${params.toString()}`;
+    }
+    return null;
+  }
+  
+  if (isInAppBrowser()) {
+    if (type === 'phantom' && isPhantomBrowser()) {
+      let attempts = 0;
+      while (!window.phantom?.solana && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+      return window.phantom?.solana;
+    }
+    if (type === 'solflare' && isSolflareBrowser()) {
+      let attempts = 0;
+      while (!window.solflare && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+      return window.solflare;
+    }
+  }
+
+  // Pour les navigateurs desktop
+  try {
+    let provider = null;
+    if (type === 'solflare') {
+      let attempts = 0;
+      while (!window.solflare && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+      provider = window.solflare;
+    } else {
+      provider = window?.phantom?.solana;
+    }
+
+    if (provider) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      return provider;
+    }
+  } catch (error) {
+    console.error('Error getting desktop provider:', error);
+  }
+
+  // Si on est sur desktop et que le wallet n'est pas installé
+  if (!isMobile) {
+    const downloadUrls = {
+      phantom: 'https://phantom.app/download',
+      solflare: 'https://solflare.com/download'
+    };
+    window.open(downloadUrls[type], '_blank');
+  }
+  
+  return null;
+};
 
 export const useWallet = () => {
   const [connection, setConnection] = useState<WalletConnection>({
@@ -27,29 +117,33 @@ export const useWallet = () => {
       const provider = await getProvider(type);
       if (!provider) return;
 
-      // Si c'est un provider mobile
-      if (provider.publicKey instanceof PublicKey) {
-        updateConnectionState(provider, provider.publicKey, type);
-        return;
-      }
-
-      // Pour Solflare
+      // Pour Solflare spécifiquement
       if (type === 'solflare') {
-        if (provider.isConnected) {
-          const publicKey = await provider.publicKey;
-          if (publicKey) {
-            updateConnectionState(provider, publicKey, type);
-            return;
+        try {
+          // Si déjà connecté, mettre à jour l'état
+          if (provider.isConnected) {
+            console.log("Solflare already connected, getting publicKey");
+            const publicKey = await provider.publicKey;
+            if (publicKey) {
+              updateConnectionState(provider, publicKey, type);
+              return;
+            }
           }
-        }
 
-        const response = await provider.connect();
-        const publicKey = response?.publicKey || await provider.publicKey;
-        if (publicKey) {
-          updateConnectionState(provider, publicKey, type);
+          console.log("Attempting Solflare connection");
+          const response = await provider.connect();
+          await new Promise(resolve => setTimeout(resolve, 200));
+          
+          const publicKey = response?.publicKey || await provider.publicKey;
+          if (publicKey) {
+            console.log("Solflare connection successful");
+            updateConnectionState(provider, publicKey, type);
+          }
+        } catch (error) {
+          console.error("Solflare specific error:", error);
+          throw error;
         }
       } else {
-        // Pour Phantom
         const response = await provider.connect();
         if (response?.publicKey) {
           updateConnectionState(provider, response.publicKey, type);
@@ -65,10 +159,24 @@ export const useWallet = () => {
     if (!connection.provider || !connection.providerType) return;
 
     try {
-      await connection.provider.disconnect();
-      updateConnectionState(null, null, null);
-      
-      if (!isMobileDevice()) {
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const isSolflareInApp = isSolflareBrowser() && isMobile;
+
+      // Pour Solflare sur mobile
+      if (connection.providerType === 'solflare' && isSolflareInApp) {
+        try {
+          await connection.provider.disconnect();
+          updateConnectionState(null, null, null);
+          // Pas de reload pour mobile
+        } catch (error) {
+          console.error("Error disconnecting Solflare mobile:", error);
+          // Force disconnect
+          updateConnectionState(null, null, null);
+        }
+      } else {
+        // Pour desktop et autres wallets
+        await connection.provider.disconnect();
+        updateConnectionState(null, null, null);
         setTimeout(() => window.location.reload(), 100);
       }
     } catch (error) {
@@ -77,6 +185,7 @@ export const useWallet = () => {
     }
   }, [connection.provider, connection.providerType, updateConnectionState]);
 
+  // Event listeners
   useEffect(() => {
     const provider = connection.provider;
     if (!provider) return;
@@ -100,24 +209,21 @@ export const useWallet = () => {
       updateConnectionState(null, null, null);
     };
 
-    if (provider.on) {
-      provider.on('connect', handleAccountChanged);
-      provider.on('disconnect', handleDisconnect);
-      provider.on('accountChanged', handleAccountChanged);
+    provider.on('connect', handleAccountChanged);
+    provider.on('disconnect', handleDisconnect);
+    provider.on('accountChanged', handleAccountChanged);
 
-      return () => {
-        provider.removeAllListeners?.('connect');
-        provider.removeAllListeners?.('disconnect');
-        provider.removeAllListeners?.('accountChanged');
-      };
-    }
+    return () => {
+      provider.removeAllListeners?.('connect');
+      provider.removeAllListeners?.('disconnect');
+      provider.removeAllListeners?.('accountChanged');
+    };
   }, [connection.provider, connection.providerType, updateConnectionState]);
 
   return {
     connection,
     connectWallet,
     disconnectWallet,
-    isInAppBrowser: isInAppBrowser(),
-    isMobileDevice: isMobileDevice()
+    isInAppBrowser: isInAppBrowser()
   };
 };
