@@ -24,38 +24,79 @@ const getProvider = async (type: WalletProvider) => {
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   const isStandaloneBrowser = !isInAppBrowser();
 
-  // Si on est sur mobile mais pas dans un wallet browser
-  if (isMobile && isStandaloneBrowser) {
-    const currentUrl = window.location.href;
-    const url = encodeURIComponent(currentUrl);
+  // Pour Solflare sur mobile
+  if (type === 'solflare') {
+    try {
+      // Détecter si le provider est déjà injecté
+      if (window.solflare) {
+        return window.solflare;
+      }
 
-    if (type === 'phantom') {
-      window.location.href = `https://phantom.app/ul/browse/${url}?ref=${encodeURIComponent(window.location.origin)}`;
-    } else {
-      const params = new URLSearchParams({
-        ref: window.location.origin
-      });
-      window.location.href = `solflare://v1/browse/${url}?${params.toString()}`;
+      // Attendre un peu l'injection naturelle
+      await new Promise(resolve => setTimeout(resolve, 100));
+      if (window.solflare) {
+        return window.solflare;
+      }
+
+      // Si on est sur mobile dans un navigateur standard, attendre l'injection
+      if (isMobile && isStandaloneBrowser) {
+        let attempts = 0;
+        while (!window.solflare && attempts < 50) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          attempts++;
+        }
+        if (window.solflare) {
+          return window.solflare;
+        }
+      }
+      
+      // Si toujours pas de provider, rediriger vers l'app
+      if (isMobile) {
+        const currentUrl = window.location.href;
+        const url = encodeURIComponent(currentUrl);
+        const params = new URLSearchParams({
+          ref: window.location.origin
+        });
+        window.location.href = `solflare://v1/browse/${url}?${params.toString()}`;
+        return null;
+      }
+    } catch (error) {
+      console.error('Error getting Solflare provider:', error);
     }
-    return null;
   }
-  
-  if (isInAppBrowser()) {
-    if (type === 'phantom' && isPhantomBrowser()) {
-      let attempts = 0;
-      while (!window.phantom?.solana && attempts < 50) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        attempts++;
+
+  // Pour Phantom sur mobile
+  if (type === 'phantom') {
+    try {
+      if (window.phantom?.solana) {
+        return window.phantom.solana;
       }
-      return window.phantom?.solana;
-    }
-    if (type === 'solflare' && isSolflareBrowser()) {
-      let attempts = 0;
-      while (!window.solflare && attempts < 50) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        attempts++;
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+      if (window.phantom?.solana) {
+        return window.phantom.solana;
       }
-      return window.solflare;
+
+      if (isMobile && isStandaloneBrowser) {
+        let attempts = 0;
+        while (!window.phantom?.solana && attempts < 50) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          attempts++;
+        }
+        if (window.phantom?.solana) {
+          return window.phantom.solana;
+        }
+      }
+
+      // Si toujours pas de provider, rediriger vers l'app
+      if (isMobile) {
+        const currentUrl = window.location.href;
+        const url = encodeURIComponent(currentUrl);
+        window.location.href = `https://phantom.app/ul/browse/${url}?ref=${encodeURIComponent(window.location.origin)}`;
+        return null;
+      }
+    } catch (error) {
+      console.error('Error getting Phantom provider:', error);
     }
   }
 
@@ -63,18 +104,12 @@ const getProvider = async (type: WalletProvider) => {
   try {
     let provider = null;
     if (type === 'solflare') {
-      let attempts = 0;
-      while (!window.solflare && attempts < 50) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        attempts++;
-      }
       provider = window.solflare;
     } else {
       provider = window?.phantom?.solana;
     }
 
     if (provider) {
-      await new Promise(resolve => setTimeout(resolve, 100));
       return provider;
     }
   } catch (error) {
