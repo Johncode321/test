@@ -24,100 +24,49 @@ const getProvider = async (type: WalletProvider) => {
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   const isStandaloneBrowser = !isInAppBrowser();
 
-  // Pour Solflare sur mobile
-  if (type === 'solflare') {
-    try {
-      // Détecter si le provider est déjà injecté
-      if (window.solflare) {
-        return window.solflare;
-      }
-
-      // Attendre un peu l'injection naturelle
-      await new Promise(resolve => setTimeout(resolve, 100));
-      if (window.solflare) {
-        return window.solflare;
-      }
-
-      // Si on est sur mobile dans un navigateur standard, attendre l'injection
-      if (isMobile && isStandaloneBrowser) {
-        let attempts = 0;
-        while (!window.solflare && attempts < 50) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-          attempts++;
-        }
-        if (window.solflare) {
-          return window.solflare;
-        }
-      }
-      
-      // Si toujours pas de provider, rediriger vers l'app
-      if (isMobile) {
-        const currentUrl = window.location.href;
-        const url = encodeURIComponent(currentUrl);
-        const params = new URLSearchParams({
-          ref: window.location.origin
+  // Injecter le SDK Web3 sur mobile
+  if (isMobile && isStandaloneBrowser) {
+    if (type === 'solflare') {
+      if (!window.solflare) {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/@solflare-wallet/sdk@1.3.0/dist/index.min.js';
+        document.head.appendChild(script);
+        await new Promise((resolve) => {
+          script.onload = resolve;
         });
-        window.location.href = `solflare://v1/browse/${url}?${params.toString()}`;
-        return null;
       }
-    } catch (error) {
-      console.error('Error getting Solflare provider:', error);
+      return window.solflare;
+    } else {
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js';
+      document.head.appendChild(script);
+      await new Promise((resolve) => {
+        script.onload = resolve;
+      });
+      return window.phantom?.solana;
     }
   }
 
-  // Pour Phantom sur mobile
-  if (type === 'phantom') {
-    try {
-      if (window.phantom?.solana) {
-        return window.phantom.solana;
-      }
-
-      await new Promise(resolve => setTimeout(resolve, 100));
-      if (window.phantom?.solana) {
-        return window.phantom.solana;
-      }
-
-      if (isMobile && isStandaloneBrowser) {
-        let attempts = 0;
-        while (!window.phantom?.solana && attempts < 50) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-          attempts++;
-        }
-        if (window.phantom?.solana) {
-          return window.phantom.solana;
-        }
-      }
-
-      // Si toujours pas de provider, rediriger vers l'app
-      if (isMobile) {
-        const currentUrl = window.location.href;
-        const url = encodeURIComponent(currentUrl);
-        window.location.href = `https://phantom.app/ul/browse/${url}?ref=${encodeURIComponent(window.location.origin)}`;
-        return null;
-      }
-    } catch (error) {
-      console.error('Error getting Phantom provider:', error);
+  // Pour les wallets in-app
+  if (isInAppBrowser()) {
+    if (type === 'phantom' && isPhantomBrowser()) {
+      return window.phantom?.solana;
+    }
+    if (type === 'solflare' && isSolflareBrowser()) {
+      return window.solflare;
     }
   }
 
   // Pour les navigateurs desktop
-  try {
-    let provider = null;
-    if (type === 'solflare') {
-      provider = window.solflare;
-    } else {
-      provider = window?.phantom?.solana;
-    }
-
-    if (provider) {
-      return provider;
-    }
-  } catch (error) {
-    console.error('Error getting desktop provider:', error);
-  }
-
-  // Si on est sur desktop et que le wallet n'est pas installé
   if (!isMobile) {
+    if (type === 'solflare' && window.solflare) {
+      return window.solflare;
+    }
+    if (type === 'phantom' && window.phantom?.solana) {
+      return window.phantom.solana;
+    }
+
+    // Si le wallet n'est pas installé sur desktop
     const downloadUrls = {
       phantom: 'https://phantom.app/download',
       solflare: 'https://solflare.com/download'
