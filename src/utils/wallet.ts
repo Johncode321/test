@@ -27,21 +27,9 @@ export const isMobileDevice = () => {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 };
 
-const getDesktopProvider = async (type: WalletProvider) => {
-  switch (type) {
-    case 'phantom':
-      return window?.phantom?.solana;
-    case 'solflare': {
-      let attempts = 0;
-      while (!window.solflare && attempts < 50) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        attempts++;
-      }
-      return window.solflare;
-    }
-    default:
-      return null;
-  }
+export const isTelegramBrowser = () => {
+  const userAgent = navigator.userAgent.toLowerCase();
+  return userAgent.includes('telegram');
 };
 
 export const getProvider = async (type: WalletProvider) => {
@@ -49,6 +37,7 @@ export const getProvider = async (type: WalletProvider) => {
   
   const isMobile = isMobileDevice();
   const isStandaloneBrowser = isMobile && !isInAppBrowser();
+  const isTelegram = isTelegramBrowser();
 
   // Code spécifique pour les navigateurs mobiles standards (non in-app)
   if (isStandaloneBrowser) {
@@ -57,17 +46,23 @@ export const getProvider = async (type: WalletProvider) => {
     const refParam = encodeURIComponent(dappUrl);
 
     if (type === 'phantom') {
-      window.location.href = `https://phantom.app/ul/browse/${encodedUrl}?ref=${refParam}`;
+      // Format différent pour Telegram
+      if (isTelegram) {
+        window.location.href = `phantom://browse/${encodedUrl}`;
+      } else {
+        window.location.href = `https://phantom.app/ul/browse/${encodedUrl}?ref=${refParam}`;
+      }
       return null;
     }
 
     if (type === 'solflare') {
+      // Garder le format qui fonctionne pour Solflare
       window.location.href = `https://solflare.com/ul/v1/browse/${encodedUrl}?ref=${refParam}`;
       return null;
     }
   }
 
-  // Gestion des in-app browsers
+  // Le reste du code reste inchangé...
   if (isInAppBrowser()) {
     if (type === 'phantom' && isPhantomBrowser()) {
       return window.phantom?.solana;
@@ -77,7 +72,6 @@ export const getProvider = async (type: WalletProvider) => {
     }
   }
 
-  // Gestion desktop
   if (!isMobile) {
     if (type === 'phantom') {
       if (!window?.phantom?.solana) {
@@ -97,14 +91,4 @@ export const getProvider = async (type: WalletProvider) => {
   }
   
   return null;
-};
-
-const loadScript = (src: string): Promise<void> => {
-  return new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = src;
-    script.onload = () => resolve();
-    script.onerror = (err) => reject(err);
-    document.head.appendChild(script);
-  });
 };
