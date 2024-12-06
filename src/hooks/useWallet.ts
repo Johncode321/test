@@ -27,13 +27,7 @@ const getProvider = async (type: WalletProvider) => {
 
   // Si on est sur mobile et pas dans un in-app browser
   if (isMobile && !isInAppBrowser()) {
-    if (type === 'phantom') {
-      const dappUrl = 'https://test-beta-rouge-19.vercel.app';
-      const encodedDappUrl = encodeURIComponent(dappUrl);
-      window.location.href = `https://phantom.app/ul/v1/browse/${encodedDappUrl}`;
-      return null;
-    }
-    
+    // Injecter le SDK approprié pour le mobile
     if (type === 'solflare') {
       if (!window.solflare) {
         const script = document.createElement('script');
@@ -41,6 +35,7 @@ const getProvider = async (type: WalletProvider) => {
         document.head.appendChild(script);
         await new Promise((resolve) => script.onload = resolve);
       }
+      // Utiliser l'API native de Solflare
       const provider = window.solflare;
       try {
         await provider.connect({ forceModal: true });
@@ -49,6 +44,12 @@ const getProvider = async (type: WalletProvider) => {
         console.error('Error connecting to Solflare:', error);
         return null;
       }
+    } else {
+      // Pour Phantom sur mobile
+      const dappUrl = 'https://test-beta-rouge-19.vercel.app';
+      const encodedUrl = encodeURIComponent(dappUrl);
+      window.location.href = `https://phantom.app/ul/browse/${encodedUrl}`;
+      return null;
     }
   }
 
@@ -64,18 +65,21 @@ const getProvider = async (type: WalletProvider) => {
 
   // Pour les navigateurs desktop
   if (!isMobile) {
-    if (type === 'solflare' && window.solflare) {
-      return window.solflare;
-    }
-    if (type === 'phantom' && window.phantom?.solana) {
+    if (type === 'phantom') {
+      if (!window?.phantom?.solana) {
+        window.open('https://phantom.app/download', '_blank');
+        return null;
+      }
       return window.phantom.solana;
     }
-
-    const downloadUrls = {
-      phantom: 'https://phantom.app/download',
-      solflare: 'https://solflare.com/download'
-    };
-    window.open(downloadUrls[type], '_blank');
+    
+    if (type === 'solflare') {
+      if (!window.solflare) {
+        window.open('https://solflare.com/download', '_blank');
+        return null;
+      }
+      return window.solflare;
+    }
   }
   
   return null;
@@ -145,7 +149,7 @@ export const useWallet = () => {
     if (!connection.provider || !connection.providerType) return;
 
     try {
-      const isMobile = isMobileBrowser();
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       const isSolflareInApp = isSolflareBrowser() && isMobile;
 
       if (connection.providerType === 'solflare' && isSolflareInApp) {
