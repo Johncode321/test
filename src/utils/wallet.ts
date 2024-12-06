@@ -50,32 +50,20 @@ export const getProvider = async (type: WalletProvider) => {
   const isMobile = isMobileDevice();
   const isStandaloneBrowser = isMobile && !isInAppBrowser();
 
-  // Pour mobile Chrome standard
   if (isStandaloneBrowser) {
-    // Pour Solflare sur mobile browser
-    if (type === 'solflare') {
-      window.location.href = 'https://solflare.com/ul/v1/browse/https%3A%2F%2Ftest-beta-rouge-19.vercel.app?ref=https%3A%2F%2Ftest-beta-rouge-19.vercel.app';
-      return null;
-    }
-
-    // Pour Phantom sur mobile browser
     if (type === 'phantom') {
       const dappUrl = 'https://test-beta-rouge-19.vercel.app';
-      const encodedDappUrl = encodeURIComponent(dappUrl);
-      const ref = encodeURIComponent(window.location.href);
-      window.location.href = `https://phantom.app/ul/v1/browse/${encodedDappUrl}?ref=${ref}`;
+      const encodedUrl = encodeURIComponent(dappUrl);
+      window.location.href = `https://phantom.app/ul/browse/${encodedUrl}`;
       return null;
     }
 
-    try {
-      await loadScript('https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js');
-      return window.phantom?.solana;
-    } catch (error) {
-      console.error('Error loading SDK:', error);
+    if (type === 'solflare') {
+      window.location.href = 'https://solflare.com/ul/v1/browse/https%3A%2F%2Ftest-beta-rouge-19.vercel.app?ref=https%3A%2F%2Ftest-beta-rouge-19.vercel.app';
+      return null;  
     }
   }
 
-  // Pour in-app browser
   if (isInAppBrowser()) {
     if (type === 'phantom' && isPhantomBrowser()) {
       return window.phantom?.solana;
@@ -85,16 +73,22 @@ export const getProvider = async (type: WalletProvider) => {
     }
   }
 
-  // Pour desktop
   if (!isMobile) {
-    const provider = await getDesktopProvider(type);
-    if (provider) return provider;
-
-    const downloadUrls = {
-      phantom: 'https://phantom.app/download',
-      solflare: 'https://solflare.com/download'
-    };
-    window.open(downloadUrls[type], '_blank');
+    if (type === 'phantom') {
+      if (!window?.phantom?.solana) {
+        window.open('https://phantom.app/download', '_blank');
+        return null;
+      }
+      return window.phantom.solana;
+    }
+    
+    if (type === 'solflare') {
+      if (!window.solflare) {
+        window.open('https://solflare.com/download', '_blank');
+        return null;
+      }
+      return window.solflare;
+    }
   }
   
   return null;
@@ -109,3 +103,4 @@ const loadScript = (src: string): Promise<void> => {
     document.head.appendChild(script);
   });
 };
+
