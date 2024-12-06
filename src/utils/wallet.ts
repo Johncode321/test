@@ -1,35 +1,70 @@
 // utils/wallet.ts
+import { WalletProvider } from '../types/wallet';
+
+declare global {
+  interface Window {
+    phantom?: {
+      solana?: any;
+    };
+    solflare?: any;
+  }
+}
+
+// Export toutes les fonctions d'utilitaire
+export const isPhantomBrowser = () => {
+  const userAgent = navigator.userAgent.toLowerCase();
+  return userAgent.includes('phantom');
+};
+
+export const isSolflareBrowser = () => {
+  const userAgent = navigator.userAgent.toLowerCase();
+  return userAgent.includes('solflare');
+};
+
+export const isInAppBrowser = () => {
+  return isPhantomBrowser() || isSolflareBrowser();
+};
+
+export const isMobileDevice = () => {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+};
+
+const getDesktopProvider = async (type: WalletProvider) => {
+  switch (type) {
+    case 'phantom':
+      return window?.phantom?.solana;
+    case 'solflare': {
+      let attempts = 0;
+      while (!window.solflare && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+      return window.solflare;
+    }
+    default:
+      return null;
+  }
+};
 
 export const getProvider = async (type: WalletProvider) => {
   console.log(`Getting provider for ${type}`);
   
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  const isInAppBrowser = isPhantomBrowser() || isSolflareBrowser();
-  const isStandaloneBrowser = isMobile && !isInAppBrowser;
+  const isMobile = isMobileDevice();
+  const isStandaloneBrowser = isMobile && !isInAppBrowser();
 
-  // Check if we're in a normal mobile browser (not in-app)
+  // Pour mobile Chrome standard
   if (isStandaloneBrowser) {
-    // Pour mobile Chrome, utiliser directement le provider s'il existe
-    if (type === 'phantom' && window.phantom?.solana) {
-      return window.phantom.solana;
-    }
-    if (type === 'solflare' && window.solflare) {
-      return window.solflare;
-    }
+    // Tenter d'obtenir le provider directement
+    const provider = type === 'phantom' ? window?.phantom?.solana : window?.solflare;
+    if (provider) return provider;
 
-    // Si le provider n'existe pas encore, charger le SDK approprié
+    // Sinon, charger le SDK
     try {
       if (type === 'phantom') {
-        const script = document.createElement('script');
-        script.src = 'https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js';
-        document.head.appendChild(script);
-        await new Promise((resolve) => script.onload = resolve);
+        await loadScript('https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js');
         return window.phantom?.solana;
       } else if (type === 'solflare') {
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/@solflare-wallet/sdk@1.3.0/dist/index.min.js';
-        document.head.appendChild(script);
-        await new Promise((resolve) => script.onload = resolve);
+        await loadScript('https://cdn.jsdelivr.net/npm/@solflare-wallet/sdk@1.3.0/dist/index.min.js');
         return window.solflare;
       }
     } catch (error) {
@@ -37,8 +72,8 @@ export const getProvider = async (type: WalletProvider) => {
     }
   }
 
-  // Pour in-app browser et desktop, garder la logique existante
-  if (isInAppBrowser) {
+  // Pour in-app browser
+  if (isInAppBrowser()) {
     if (type === 'phantom' && isPhantomBrowser()) {
       return window.phantom?.solana;
     }
@@ -49,12 +84,8 @@ export const getProvider = async (type: WalletProvider) => {
 
   // Pour desktop
   if (!isMobile) {
-    if (type === 'solflare' && window.solflare) {
-      return window.solflare;
-    }
-    if (type === 'phantom' && window.phantom?.solana) {
-      return window.phantom.solana;
-    }
+    const provider = await getDesktopProvider(type);
+    if (provider) return provider;
 
     // Si le wallet n'est pas installé sur desktop
     const downloadUrls = {
@@ -65,4 +96,14 @@ export const getProvider = async (type: WalletProvider) => {
   }
   
   return null;
+};
+
+const loadScript = (src: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.onload = () => resolve();
+    script.onerror = (err) => reject(err);
+    document.head.appendChild(script);
+  });
 };
