@@ -23,10 +23,6 @@ export const isInAppBrowser = () => {
   return isPhantomBrowser() || isSolflareBrowser();
 };
 
-export const isMobileDevice = () => {
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-};
-
 const getDesktopProvider = async (type: WalletProvider) => {
   switch (type) {
     case 'phantom':
@@ -47,63 +43,60 @@ const getDesktopProvider = async (type: WalletProvider) => {
 export const getProvider = async (type: WalletProvider) => {
   console.log(`Getting provider for ${type}`);
   
-  const isMobile = isMobileDevice();
-  const isStandaloneBrowser = isMobile && !isInAppBrowser();
-
-  if (isStandaloneBrowser) {
-    if (type === 'phantom') {
-      const dappUrl = 'https://test-beta-rouge-19.vercel.app';
-      const ref = encodeURIComponent(window.location.href);
-      const encodedUrl = encodeURIComponent(dappUrl);
-      // Format correct pour ouvrir dans le in-app browser
-      window.location.href = `https://phantom.app/ul/browse/${encodedUrl}?ref=${ref}`;
-      return null;
-    }
-
-    if (type === 'solflare') {
-      window.location.href = 'https://solflare.com/ul/v1/browse/https%3A%2F%2Ftest-beta-rouge-19.vercel.app?ref=https%3A%2F%2Ftest-beta-rouge-19.vercel.app';
-      return null;
-    }
-  }
-
-  // Reste du code inchangé...
+  // Check if we're in an in-app browser
   if (isInAppBrowser()) {
     if (type === 'phantom' && isPhantomBrowser()) {
+      let attempts = 0;
+      while (!window.phantom?.solana && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
       return window.phantom?.solana;
     }
     if (type === 'solflare' && isSolflareBrowser()) {
+      let attempts = 0;
+      while (!window.solflare && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
       return window.solflare;
     }
   }
 
-  if (!isMobile) {
-    if (type === 'phantom') {
-      if (!window?.phantom?.solana) {
-        window.open('https://phantom.app/download', '_blank');
-        return null;
-      }
-      return window.phantom.solana;
+  // For desktop browsers
+  try {
+    const desktopProvider = await getDesktopProvider(type);
+    if (desktopProvider) {
+      return desktopProvider;
     }
+  } catch (error) {
+    console.error('Error getting desktop provider:', error);
+  }
+
+  // For mobile or if wallet is not installed
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  
+  if (isMobile) {
+    // The URL you want to open in the wallet's browser
+    const dappUrl = 'https://test-beta-rouge-19.vercel.app/';
+    const encodedUrl = encodeURIComponent(dappUrl);
+    const ref = encodeURIComponent(window.location.origin);
     
     if (type === 'solflare') {
-      if (!window.solflare) {
-        window.open('https://solflare.com/download', '_blank');
-        return null;
-      }
-      return window.solflare;
+      // Construct Solflare deeplink according to documentation
+      const deeplink = `https://solflare.com/ul/v1/browse/${encodedUrl}?ref=${ref}`;
+      window.location.href = deeplink;
+    } else if (type === 'phantom') {
+      window.location.href = `https://phantom.app/ul/browse/${encodedUrl}?ref=${ref}`;
     }
+  } else {
+    // For desktop: open wallet download page if not installed
+    const downloadUrls = {
+      phantom: 'https://phantom.app/download',
+      solflare: 'https://solflare.com/download'
+    };
+    window.open(downloadUrls[type], '_blank');
   }
   
   return null;
 };
-
-const loadScript = (src: string): Promise<void> => {
-  return new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = src;
-    script.onload = () => resolve();
-    script.onerror = (err) => reject(err);
-    document.head.appendChild(script);
-  });
-};
-
