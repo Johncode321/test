@@ -9,7 +9,6 @@ declare global {
   }
 }
 
-// Export toutes les fonctions d'utilitaire
 export const isPhantomBrowser = () => {
   const userAgent = navigator.userAgent.toLowerCase();
   return userAgent.includes('phantom');
@@ -53,15 +52,20 @@ export const getProvider = async (type: WalletProvider) => {
 
   // Pour mobile Chrome standard
   if (isStandaloneBrowser) {
-    // Pour Solflare sur mobile browser, rediriger directement
+    // Pour Solflare sur mobile browser
     if (type === 'solflare') {
       window.location.href = 'https://solflare.com/ul/v1/browse/https%3A%2F%2Ftest-beta-rouge-19.vercel.app?ref=https%3A%2F%2Ftest-beta-rouge-19.vercel.app';
       return null;
     }
 
-    // Pour Phantom
-    const provider = window?.phantom?.solana;
-    if (provider) return provider;
+    // Pour Phantom sur mobile browser
+    if (type === 'phantom') {
+      const dappUrl = 'https://test-beta-rouge-19.vercel.app';
+      const encodedDappUrl = encodeURIComponent(dappUrl);
+      const ref = encodeURIComponent(window.location.href);
+      window.location.href = `https://phantom.app/ul/v1/browse/${encodedDappUrl}?ref=${ref}`;
+      return null;
+    }
 
     try {
       await loadScript('https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js');
@@ -86,7 +90,6 @@ export const getProvider = async (type: WalletProvider) => {
     const provider = await getDesktopProvider(type);
     if (provider) return provider;
 
-    // Si le wallet n'est pas installé sur desktop
     const downloadUrls = {
       phantom: 'https://phantom.app/download',
       solflare: 'https://solflare.com/download'
