@@ -4,7 +4,7 @@ import { MessageInput } from './MessageInput';
 import { SignatureDisplay } from './SignatureDisplay';
 import { WalletInfo } from './WalletInfo';
 import { PenSquare, ExternalLink } from 'lucide-react';
-import { isInAppBrowser, isPhantomBrowser, isSolflareBrowser, isMobileDevice } from '../utils/wallet';
+import { isInAppBrowser, isPhantomBrowser, isSolflareBrowser } from '../utils/wallet';
 import { SolanaLogo } from './SolanaLogo';
 
 interface SignerPanelProps {
@@ -32,15 +32,6 @@ export const SignerPanel = ({
   const isPhantom = isPhantomBrowser();
   const isSolflare = isSolflareBrowser();
   const isConnected = !!connection.publicKey;
-  const isMobile = isMobileDevice();
-
-  const handleSolflareConnect = () => {
-    if (isMobile && !inAppBrowser) {
-      window.location.href = 'https://solflare.com/ul/v1/browse/https%3A%2F%2Ftest-beta-rouge-19.vercel.app?ref=https%3A%2F%2Ftest-beta-rouge-19.vercel.app';
-      return;
-    }
-    onConnect('solflare');
-  };
 
   const renderWalletButtons = () => {
     if (inAppBrowser) {
@@ -86,7 +77,7 @@ export const SignerPanel = ({
         
         <Button 
           variant="primary" 
-          onClick={handleSolflareConnect}
+          onClick={() => onConnect('solflare')}
           className="bg-gradient-to-r from-orange-500 to-orange-600 flex items-center justify-center gap-2"
         >
           {!inAppBrowser ? (
