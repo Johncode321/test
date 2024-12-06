@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { PublicKey } from '@solana/web3.js';
 import { WalletConnection, WalletProvider } from '../types/wallet';
 
-// Utility functions
 const isPhantomBrowser = () => {
   const userAgent = navigator.userAgent.toLowerCase();
   return userAgent.includes('phantom');
@@ -21,7 +20,6 @@ const isMobileBrowser = () => {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 };
 
-// Get provider function with native mobile support
 const getProvider = async (type: WalletProvider) => {
   console.log(`Getting provider for ${type}`);
   
@@ -29,7 +27,13 @@ const getProvider = async (type: WalletProvider) => {
 
   // Si on est sur mobile et pas dans un in-app browser
   if (isMobile && !isInAppBrowser()) {
-    // Injecter le SDK approprié pour le mobile
+    if (type === 'phantom') {
+      const dappUrl = 'https://test-beta-rouge-19.vercel.app';
+      const encodedDappUrl = encodeURIComponent(dappUrl);
+      window.location.href = `https://phantom.app/ul/v1/browse/${encodedDappUrl}`;
+      return null;
+    }
+    
     if (type === 'solflare') {
       if (!window.solflare) {
         const script = document.createElement('script');
@@ -37,32 +41,13 @@ const getProvider = async (type: WalletProvider) => {
         document.head.appendChild(script);
         await new Promise((resolve) => script.onload = resolve);
       }
-      // Utiliser l'API native de Solflare
       const provider = window.solflare;
       try {
-        await provider.connect({ forceModal: true }); // Force l'affichage du popup natif
+        await provider.connect({ forceModal: true });
         return provider;
       } catch (error) {
         console.error('Error connecting to Solflare:', error);
         return null;
-      }
-    } else {
-      // Pour Phantom sur mobile
-      if (!window.phantom) {
-        const script = document.createElement('script');
-        script.src = 'https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js';
-        document.head.appendChild(script);
-        await new Promise((resolve) => script.onload = resolve);
-      }
-      const provider = window.phantom?.solana;
-      if (provider) {
-        try {
-          await provider.connect({ onlyIfTrusted: false }); // Force l'affichage du popup natif
-          return provider;
-        } catch (error) {
-          console.error('Error connecting to Phantom:', error);
-          return null;
-        }
       }
     }
   }
@@ -86,7 +71,6 @@ const getProvider = async (type: WalletProvider) => {
       return window.phantom.solana;
     }
 
-    // Redirection vers la page de téléchargement sur desktop
     const downloadUrls = {
       phantom: 'https://phantom.app/download',
       solflare: 'https://solflare.com/download'
@@ -121,10 +105,8 @@ export const useWallet = () => {
       const provider = await getProvider(type);
       if (!provider) return;
 
-      // Pour Solflare spécifiquement
       if (type === 'solflare') {
         try {
-          // Si déjà connecté, mettre à jour l'état
           if (provider.isConnected) {
             console.log("Solflare already connected, getting publicKey");
             const publicKey = await provider.publicKey;
@@ -163,22 +145,18 @@ export const useWallet = () => {
     if (!connection.provider || !connection.providerType) return;
 
     try {
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const isMobile = isMobileBrowser();
       const isSolflareInApp = isSolflareBrowser() && isMobile;
 
-      // Pour Solflare sur mobile
       if (connection.providerType === 'solflare' && isSolflareInApp) {
         try {
           await connection.provider.disconnect();
           updateConnectionState(null, null, null);
-          // Pas de reload pour mobile
         } catch (error) {
           console.error("Error disconnecting Solflare mobile:", error);
-          // Force disconnect
           updateConnectionState(null, null, null);
         }
       } else {
-        // Pour desktop et autres wallets
         await connection.provider.disconnect();
         updateConnectionState(null, null, null);
         setTimeout(() => window.location.reload(), 100);
@@ -189,7 +167,6 @@ export const useWallet = () => {
     }
   }, [connection.provider, connection.providerType, updateConnectionState]);
 
-  // Event listeners
   useEffect(() => {
     const provider = connection.provider;
     if (!provider) return;
