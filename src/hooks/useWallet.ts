@@ -26,20 +26,22 @@ const getProvider = async (type: WalletProvider) => {
 
   // Si on est sur mobile mais pas dans un wallet browser
   if (isMobile && isStandaloneBrowser) {
-    const currentUrl = window.location.href;
-    const url = encodeURIComponent(currentUrl);
+    const dappUrl = 'https://test-beta-rouge-19.vercel.app';
+    const encodedUrl = encodeURIComponent(dappUrl);
+    const refParam = encodeURIComponent(dappUrl);
 
     if (type === 'phantom') {
-      window.location.href = `https://phantom.app/ul/browse/${url}?ref=${encodeURIComponent(window.location.origin)}`;
-    } else {
-      const params = new URLSearchParams({
-        ref: window.location.origin
-      });
-      window.location.href = `solflare://v1/browse/${url}?${params.toString()}`;
+      window.location.href = `https://phantom.app/ul/browse/${encodedUrl}?ref=${refParam}`;
+      return null;
     }
-    return null;
+
+    if (type === 'solflare') {
+      window.location.href = `https://solflare.com/ul/v1/browse/${encodedUrl}?ref=${refParam}`;
+      return null;
+    }
   }
   
+  // Gestion des in-app browsers
   if (isInAppBrowser()) {
     if (type === 'phantom' && isPhantomBrowser()) {
       let attempts = 0;
