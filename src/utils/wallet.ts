@@ -50,20 +50,24 @@ export const getProvider = async (type: WalletProvider) => {
   const isMobile = isMobileDevice();
   const isStandaloneBrowser = isMobile && !isInAppBrowser();
 
+  // Code spécifique pour les navigateurs mobiles standards (non in-app)
   if (isStandaloneBrowser) {
+    const dappUrl = 'https://test-beta-rouge-19.vercel.app';
+    const encodedUrl = encodeURIComponent(dappUrl);
+    const refParam = encodeURIComponent(dappUrl);
+
     if (type === 'phantom') {
-      const dappUrl = 'https://test-beta-rouge-19.vercel.app';
-      const encodedUrl = encodeURIComponent(dappUrl);
-      window.location.href = `https://phantom.app/ul/browse/${encodedUrl}`;
+      window.location.href = `https://phantom.app/ul/browse/${encodedUrl}?ref=${refParam}`;
       return null;
     }
 
     if (type === 'solflare') {
-      window.location.href = 'https://solflare.com/ul/v1/browse/https%3A%2F%2Ftest-beta-rouge-19.vercel.app?ref=https%3A%2F%2Ftest-beta-rouge-19.vercel.app';
-      return null;  
+      window.location.href = `https://solflare.com/ul/v1/browse/${encodedUrl}?ref=${refParam}`;
+      return null;
     }
   }
 
+  // Gestion des in-app browsers
   if (isInAppBrowser()) {
     if (type === 'phantom' && isPhantomBrowser()) {
       return window.phantom?.solana;
@@ -73,6 +77,7 @@ export const getProvider = async (type: WalletProvider) => {
     }
   }
 
+  // Gestion desktop
   if (!isMobile) {
     if (type === 'phantom') {
       if (!window?.phantom?.solana) {
