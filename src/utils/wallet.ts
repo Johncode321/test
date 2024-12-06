@@ -53,17 +53,20 @@ export const getProvider = async (type: WalletProvider) => {
   if (isStandaloneBrowser) {
     if (type === 'phantom') {
       const dappUrl = 'https://test-beta-rouge-19.vercel.app';
+      const ref = encodeURIComponent(window.location.href);
       const encodedUrl = encodeURIComponent(dappUrl);
-      window.location.href = `https://phantom.app/ul/browse/${encodedUrl}`;
+      // Format correct pour ouvrir dans le in-app browser
+      window.location.href = `https://phantom.app/ul/browse/${encodedUrl}?ref=${ref}`;
       return null;
     }
 
     if (type === 'solflare') {
       window.location.href = 'https://solflare.com/ul/v1/browse/https%3A%2F%2Ftest-beta-rouge-19.vercel.app?ref=https%3A%2F%2Ftest-beta-rouge-19.vercel.app';
-      return null;  
+      return null;
     }
   }
 
+  // Reste du code inchangé...
   if (isInAppBrowser()) {
     if (type === 'phantom' && isPhantomBrowser()) {
       return window.phantom?.solana;
