@@ -46,7 +46,7 @@ const getDesktopProvider = async (type: WalletProvider) => {
 
 const createPhantomDeepLink = (dappUrl: string) => {
   const encodedUrl = encodeURIComponent(dappUrl);
-  const ref = encodeURIComponent(window.location.origin);
+  const ref = encodeURIComponent(dappUrl);
   return `https://phantom.app/ul/browse/${encodedUrl}?ref=${ref}`;
 };
 
@@ -65,7 +65,7 @@ export const getProvider = async (type: WalletProvider) => {
 
   // Gestion des deep links sur mobile (hors wallet browser)
   if (isStandaloneBrowser) {
-    const dappUrl = window.location.href;
+    const dappUrl = 'https://test-beta-rouge-19.vercel.app';
     
     if (type === 'phantom') {
       const deepLink = createPhantomDeepLink(dappUrl);
