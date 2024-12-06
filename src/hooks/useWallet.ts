@@ -23,6 +23,7 @@ const getProvider = async (type: WalletProvider) => {
   
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   const isStandaloneBrowser = !isInAppBrowser();
+  const isTelegram = navigator.userAgent.toLowerCase().includes('telegram');
 
   // Si on est sur mobile mais pas dans un wallet browser
   if (isMobile && isStandaloneBrowser) {
@@ -31,7 +32,13 @@ const getProvider = async (type: WalletProvider) => {
     const refParam = encodeURIComponent(dappUrl);
 
     if (type === 'phantom') {
-      window.location.href = `https://phantom.app/ul/browse/${encodedUrl}?ref=${refParam}`;
+      if (isTelegram) {
+        // Format deep link spécifique pour Telegram
+        window.location.href = `phantom://browse/${encodedUrl}`;
+      } else {
+        // Format standard pour les autres navigateurs
+        window.location.href = `https://phantom.app/ul/browse/${encodedUrl}?ref=${refParam}`;
+      }
       return null;
     }
 
