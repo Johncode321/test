@@ -23,6 +23,10 @@ export const isInAppBrowser = () => {
   return isPhantomBrowser() || isSolflareBrowser();
 };
 
+export const isMobileDevice = () => {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+};
+
 const getDesktopProvider = async (type: WalletProvider) => {
   switch (type) {
     case 'phantom':
@@ -40,10 +44,43 @@ const getDesktopProvider = async (type: WalletProvider) => {
   }
 };
 
+const createPhantomDeepLink = (dappUrl: string) => {
+  const encodedUrl = encodeURIComponent(dappUrl);
+  const ref = encodeURIComponent(window.location.origin);
+  return `https://phantom.app/ul/browse/${encodedUrl}?ref=${ref}`;
+};
+
+const createSolflareDeepLink = (dappUrl: string) => {
+  const params = new URLSearchParams({
+    ref: window.location.origin
+  });
+  return `solflare://v1/browse/${encodeURIComponent(dappUrl)}?${params.toString()}`;
+};
+
 export const getProvider = async (type: WalletProvider) => {
   console.log(`Getting provider for ${type}`);
   
-  // Check if we're in an in-app browser
+  const isMobile = isMobileDevice();
+  const isStandaloneBrowser = isMobile && !isInAppBrowser();
+
+  // Gestion des deep links sur mobile (hors wallet browser)
+  if (isStandaloneBrowser) {
+    const dappUrl = window.location.href;
+    
+    if (type === 'phantom') {
+      const deepLink = createPhantomDeepLink(dappUrl);
+      window.location.href = deepLink;
+      return null;
+    }
+
+    if (type === 'solflare') {
+      const deepLink = createSolflareDeepLink(dappUrl);
+      window.location.href = deepLink;
+      return null;
+    }
+  }
+
+  // Gestion dans les wallet browsers
   if (isInAppBrowser()) {
     if (type === 'phantom' && isPhantomBrowser()) {
       let attempts = 0;
@@ -63,40 +100,35 @@ export const getProvider = async (type: WalletProvider) => {
     }
   }
 
-  // For desktop browsers
-  try {
-    const desktopProvider = await getDesktopProvider(type);
-    if (desktopProvider) {
-      return desktopProvider;
+  // Gestion desktop
+  if (!isMobile) {
+    try {
+      const provider = await getDesktopProvider(type);
+      if (!provider) {
+        // Redirection vers la page de téléchargement si le wallet n'est pas installé
+        const downloadUrls = {
+          phantom: 'https://phantom.app/download',
+          solflare: 'https://solflare.com/download'
+        };
+        window.open(downloadUrls[type], '_blank');
+        return null;
+      }
+      return provider;
+    } catch (error) {
+      console.error('Error getting desktop provider:', error);
+      return null;
     }
-  } catch (error) {
-    console.error('Error getting desktop provider:', error);
-  }
-
-  // For mobile or if wallet is not installed
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  
-  if (isMobile) {
-    // The URL you want to open in the wallet's browser
-    const dappUrl = 'https://test-beta-rouge-19.vercel.app/';
-    const encodedUrl = encodeURIComponent(dappUrl);
-    const ref = encodeURIComponent(window.location.origin);
-    
-    if (type === 'solflare') {
-      // Construct Solflare deeplink according to documentation
-      const deeplink = `https://solflare.com/ul/v1/browse/${encodedUrl}?ref=${ref}`;
-      window.location.href = deeplink;
-    } else if (type === 'phantom') {
-      window.location.href = `https://phantom.app/ul/browse/${encodedUrl}?ref=${ref}`;
-    }
-  } else {
-    // For desktop: open wallet download page if not installed
-    const downloadUrls = {
-      phantom: 'https://phantom.app/download',
-      solflare: 'https://solflare.com/download'
-    };
-    window.open(downloadUrls[type], '_blank');
   }
   
   return null;
+};
+
+const loadScript = (src: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.onload = () => resolve();
+    script.onerror = (err) => reject(err);
+    document.head.appendChild(script);
+  });
 };
