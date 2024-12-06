@@ -1,96 +1,62 @@
-import { WalletProvider } from '../types/wallet';
-
-declare global {
-  interface Window {
-    phantom?: {
-      solana?: any;
-    };
-    solflare?: any;
-  }
-}
-
-export const isPhantomBrowser = () => {
-  const userAgent = navigator.userAgent.toLowerCase();
-  return userAgent.includes('phantom');
-};
-
-export const isSolflareBrowser = () => {
-  const userAgent = navigator.userAgent.toLowerCase();
-  return userAgent.includes('solflare');
-};
-
-export const isInAppBrowser = () => {
-  return isPhantomBrowser() || isSolflareBrowser();
-};
-
-const getDesktopProvider = async (type: WalletProvider) => {
-  switch (type) {
-    case 'phantom':
-      return window?.phantom?.solana;
-    case 'solflare': {
-      let attempts = 0;
-      while (!window.solflare && attempts < 50) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        attempts++;
-      }
-      return window.solflare;
-    }
-    default:
-      return null;
-  }
-};
+// utils/wallet.ts
 
 export const getProvider = async (type: WalletProvider) => {
   console.log(`Getting provider for ${type}`);
   
-  // Check if we're in an in-app browser
-  if (isInAppBrowser()) {
-    if (type === 'phantom' && isPhantomBrowser()) {
-      let attempts = 0;
-      while (!window.phantom?.solana && attempts < 50) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        attempts++;
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const isInAppBrowser = isPhantomBrowser() || isSolflareBrowser();
+  const isStandaloneBrowser = isMobile && !isInAppBrowser;
+
+  // Check if we're in a normal mobile browser (not in-app)
+  if (isStandaloneBrowser) {
+    // Pour mobile Chrome, utiliser directement le provider s'il existe
+    if (type === 'phantom' && window.phantom?.solana) {
+      return window.phantom.solana;
+    }
+    if (type === 'solflare' && window.solflare) {
+      return window.solflare;
+    }
+
+    // Si le provider n'existe pas encore, charger le SDK approprié
+    try {
+      if (type === 'phantom') {
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js';
+        document.head.appendChild(script);
+        await new Promise((resolve) => script.onload = resolve);
+        return window.phantom?.solana;
+      } else if (type === 'solflare') {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/@solflare-wallet/sdk@1.3.0/dist/index.min.js';
+        document.head.appendChild(script);
+        await new Promise((resolve) => script.onload = resolve);
+        return window.solflare;
       }
+    } catch (error) {
+      console.error('Error loading SDK:', error);
+    }
+  }
+
+  // Pour in-app browser et desktop, garder la logique existante
+  if (isInAppBrowser) {
+    if (type === 'phantom' && isPhantomBrowser()) {
       return window.phantom?.solana;
     }
     if (type === 'solflare' && isSolflareBrowser()) {
-      let attempts = 0;
-      while (!window.solflare && attempts < 50) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        attempts++;
-      }
       return window.solflare;
     }
   }
 
-  // For desktop browsers
-  try {
-    const desktopProvider = await getDesktopProvider(type);
-    if (desktopProvider) {
-      return desktopProvider;
+  // Pour desktop
+  if (!isMobile) {
+    if (type === 'solflare' && window.solflare) {
+      return window.solflare;
     }
-  } catch (error) {
-    console.error('Error getting desktop provider:', error);
-  }
+    if (type === 'phantom' && window.phantom?.solana) {
+      return window.phantom.solana;
+    }
 
-  // For mobile or if wallet is not installed
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  
-  if (isMobile) {
-    // The URL you want to open in the wallet's browser
-    const dappUrl = 'https://test-beta-rouge-19.vercel.app/';
-    const encodedUrl = encodeURIComponent(dappUrl);
-    const ref = encodeURIComponent(window.location.origin);
-    
-    if (type === 'solflare') {
-      // Construct Solflare deeplink according to documentation
-      const deeplink = `https://solflare.com/ul/v1/browse/${encodedUrl}?ref=${ref}`;
-      window.location.href = deeplink;
-    } else if (type === 'phantom') {
-      window.location.href = `https://phantom.app/ul/browse/${encodedUrl}?ref=${ref}`;
-    }
-  } else {
-    // For desktop: open wallet download page if not installed
+    // Si le wallet n'est pas installé sur desktop
     const downloadUrls = {
       phantom: 'https://phantom.app/download',
       solflare: 'https://solflare.com/download'
