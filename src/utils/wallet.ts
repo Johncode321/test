@@ -1,4 +1,3 @@
-// utils/wallet.ts
 import { WalletProvider } from '../types/wallet';
 
 declare global {
@@ -54,19 +53,19 @@ export const getProvider = async (type: WalletProvider) => {
 
   // Pour mobile Chrome standard
   if (isStandaloneBrowser) {
-    // Tenter d'obtenir le provider directement
-    const provider = type === 'phantom' ? window?.phantom?.solana : window?.solflare;
+    // Pour Solflare sur mobile browser, rediriger directement
+    if (type === 'solflare') {
+      window.location.href = 'https://solflare.com/ul/v1/browse/https%3A%2F%2Ftest-beta-rouge-19.vercel.app?ref=https%3A%2F%2Ftest-beta-rouge-19.vercel.app';
+      return null;
+    }
+
+    // Pour Phantom
+    const provider = window?.phantom?.solana;
     if (provider) return provider;
 
-    // Sinon, charger le SDK
     try {
-      if (type === 'phantom') {
-        await loadScript('https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js');
-        return window.phantom?.solana;
-      } else if (type === 'solflare') {
-        await loadScript('https://cdn.jsdelivr.net/npm/@solflare-wallet/sdk@1.3.0/dist/index.min.js');
-        return window.solflare;
-      }
+      await loadScript('https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js');
+      return window.phantom?.solana;
     } catch (error) {
       console.error('Error loading SDK:', error);
     }
