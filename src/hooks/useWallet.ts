@@ -17,37 +17,57 @@ const isInAppBrowser = () => {
   return isPhantomBrowser() || isSolflareBrowser();
 };
 
-// Get provider function
+const isMobileBrowser = () => {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+};
+
+// Get provider function with native mobile support
 const getProvider = async (type: WalletProvider) => {
   console.log(`Getting provider for ${type}`);
   
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  const isStandaloneBrowser = !isInAppBrowser();
+  const isMobile = isMobileBrowser();
 
-  // Injecter le SDK Web3 sur mobile
-  if (isMobile && isStandaloneBrowser) {
+  // Si on est sur mobile et pas dans un in-app browser
+  if (isMobile && !isInAppBrowser()) {
+    // Injecter le SDK approprié pour le mobile
     if (type === 'solflare') {
       if (!window.solflare) {
         const script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/npm/@solflare-wallet/sdk@1.3.0/dist/index.min.js';
         document.head.appendChild(script);
-        await new Promise((resolve) => {
-          script.onload = resolve;
-        });
+        await new Promise((resolve) => script.onload = resolve);
       }
-      return window.solflare;
+      // Utiliser l'API native de Solflare
+      const provider = window.solflare;
+      try {
+        await provider.connect({ forceModal: true }); // Force l'affichage du popup natif
+        return provider;
+      } catch (error) {
+        console.error('Error connecting to Solflare:', error);
+        return null;
+      }
     } else {
-      const script = document.createElement('script');
-      script.src = 'https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js';
-      document.head.appendChild(script);
-      await new Promise((resolve) => {
-        script.onload = resolve;
-      });
-      return window.phantom?.solana;
+      // Pour Phantom sur mobile
+      if (!window.phantom) {
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js';
+        document.head.appendChild(script);
+        await new Promise((resolve) => script.onload = resolve);
+      }
+      const provider = window.phantom?.solana;
+      if (provider) {
+        try {
+          await provider.connect({ onlyIfTrusted: false }); // Force l'affichage du popup natif
+          return provider;
+        } catch (error) {
+          console.error('Error connecting to Phantom:', error);
+          return null;
+        }
+      }
     }
   }
 
-  // Pour les wallets in-app
+  // Pour les wallets in-app existants
   if (isInAppBrowser()) {
     if (type === 'phantom' && isPhantomBrowser()) {
       return window.phantom?.solana;
@@ -66,7 +86,7 @@ const getProvider = async (type: WalletProvider) => {
       return window.phantom.solana;
     }
 
-    // Si le wallet n'est pas installé sur desktop
+    // Redirection vers la page de téléchargement sur desktop
     const downloadUrls = {
       phantom: 'https://phantom.app/download',
       solflare: 'https://solflare.com/download'
