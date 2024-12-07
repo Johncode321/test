@@ -104,7 +104,7 @@ export const SignerPanel = ({
             <p className="text-gray-400 text-sm">
               {inAppBrowser 
                 ? "Sign your custom messages securely."
-                : "Sign your custom messages securely. Choose your wallet to get started."}
+                : "Sign your custom messages securely. <br /> Choose your wallet to get started."}
             </p>
           </div>
           
