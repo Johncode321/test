@@ -68,7 +68,7 @@ export const SignerPanel = ({
         >
           {!inAppBrowser ? (
             <>
-              Open in Phantom <ExternalLink size={16} />
+              Open in Phanton 
             </>
           ) : (
             'Connect with Phantom'
@@ -82,7 +82,7 @@ export const SignerPanel = ({
         >
           {!inAppBrowser ? (
             <>
-              Open in Solflare <ExternalLink size={16} />
+              Open in Solflare
             </>
           ) : (
             'Connect with Solflare'
@@ -103,7 +103,7 @@ export const SignerPanel = ({
             <h1 className="text-2xl font-bold text-white mb-2">Solana Message Signer</h1>
             <p className="text-gray-400 text-sm">
               {inAppBrowser 
-                ? "Connect with your wallet"
+                ? "Sign your custom messages securely. Connect with your wallet"
                 : "Sign your custom messages securely. Choose your wallet to get started."}
             </p>
           </div>
