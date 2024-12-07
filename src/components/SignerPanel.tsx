@@ -121,10 +121,11 @@ export const SignerPanel = ({
           
           <WalletInfo connection={connection} />
           
-          <MessageInput
-            value={message}
-            onChange={onMessageChange}
-          />
+<MessageInput
+  value={message}
+  onChange={onMessageChange}
+  providerType={connection.providerType}
+/>
           
           <Button
             variant="primary"
