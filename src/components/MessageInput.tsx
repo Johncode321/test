@@ -16,7 +16,8 @@ export const MessageInput = ({ value, onChange, providerType }: MessageInputProp
         text-white placeholder-gray-500 text-sm resize-none outline-none shadow-lg
         transition-all focus:border-transparent"
       style={{
-        '--tw-shadow-colored': '0 10px 15px -3px rgb(26 35 50), 0 4px 6px -4px rgb(26 35 50)',
+        '--tw-shadow-color': 'rgb(26 35 50)',
+        '--tw-shadow-colored': '0 10px 15px -3px rgb(26 35 50), 0 4px 6px -4px var(--tw-shadow-color)',
         ':focus': {
           '--tw-ring-shadow': `0 0 0 2px ${focusColor}`
         }
