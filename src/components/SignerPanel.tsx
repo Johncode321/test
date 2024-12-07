@@ -68,7 +68,7 @@ export const SignerPanel = ({
         >
           {!inAppBrowser ? (
             <>
-              Open in Phanton 
+              Open with Phanton 
             </>
           ) : (
             'Connect with Phantom'
@@ -82,7 +82,7 @@ export const SignerPanel = ({
         >
           {!inAppBrowser ? (
             <>
-              Open in Solflare
+              Open with Solflare
             </>
           ) : (
             'Connect with Solflare'
