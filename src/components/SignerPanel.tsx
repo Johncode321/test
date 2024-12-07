@@ -103,8 +103,8 @@ export const SignerPanel = ({
             <h1 className="text-2xl font-bold text-white mb-2">Solana Message Signer</h1>
             <p className="text-gray-400 text-sm">
               {inAppBrowser 
-                ? "Connect with your wallet"
-                : "Open in your preferred wallet"}
+                ? "Sign your custom messages securely."
+                : "Sign your custom messages securely."}
             </p>
           </div>
           
