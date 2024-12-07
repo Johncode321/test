@@ -93,20 +93,31 @@ export const SignerPanel = ({
   };
 
   return (
-    <div className="w-full max-w-md bg-gray-800/50 backdrop-blur-lg p-8 rounded-2xl border border-gray-700 shadow-xl">
-      {!isConnected ? (
-        <div className="space-y-6">
-          <div className="text-center">
-            <div className="mb-6 flex justify-center">
-              <SolanaLogo className="w-20 h-20" />
-            </div>
-            <h1 className="text-2xl font-bold text-white mb-2">Solana Message Signer</h1>
-            <p className="text-gray-400 text-sm">
-              {inAppBrowser 
-                ? "Sign your custom messages securely."
-                : "Sign your custom messages securely. <br /> Choose your wallet to get started."}
-            </p>
-          </div>
+<div className="w-full max-w-md bg-gray-800/50 backdrop-blur-lg p-8 rounded-2xl border border-gray-700 shadow-xl">
+  {!isConnected ? (
+    <div className="space-y-6">
+      <div className="text-center">
+        <div className="mb-6 flex justify-center">
+          <SolanaLogo className="w-20 h-20" />
+        </div>
+        <h1 className="text-2xl font-bold text-white mb-2">Solana Message Signer</h1>
+        <p className="text-gray-400 text-sm">
+          {inAppBrowser ? (
+            "Sign your custom messages securely."
+          ) : (
+            <>
+              Sign your custom messages securely. <br />
+              Choose your wallet to get started.
+            </>
+          )}
+        </p>
+      </div>
+      
+      {renderWalletButtons()}
+    </div>
+  ) : null}
+</div>
+
           
           {renderWalletButtons()}
         </div>
