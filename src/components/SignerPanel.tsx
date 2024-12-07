@@ -34,30 +34,31 @@ export const SignerPanel = ({
   const isConnected = !!connection.publicKey;
 
   const renderWalletButtons = () => {
-    if (isPhantom) {
-      return (
-        <Button 
-          variant="primary" 
-          onClick={() => onConnect('phantom')}
-          className="bg-[#ab9ff2] flex items-center justify-center gap-2"
-        >
-          <img src="/phantom_logo.svg" alt="Phantom" className="w-6 h-6" />
-          Connect with Phantom
-        </Button>
-      );
-    }
-
-    if (isSolflare) {
-      return (
-        <Button 
-          variant="primary" 
-          onClick={() => onConnect('solflare')}
-          className="bg-[#fc7227] flex items-center justify-center gap-2"
-        >
-          <img src="/solflare_logo.svg" alt="Solflare" className="w-6 h-6" />
-          Connect with Solflare
-        </Button>
-      );
+    if (inAppBrowser) {
+      if (isPhantom) {
+        return (
+          <Button 
+            variant="primary" 
+            onClick={() => onConnect('phantom')}
+            className="bg-[#ab9ff2] flex items-center justify-center gap-2"
+          >
+            <img src="/phantom_logo.svg" alt="Phantom" className="w-6 h-6" />
+            Connect with Phantom
+          </Button>
+        );
+      }
+      if (isSolflare) {
+        return (
+          <Button 
+            variant="primary" 
+            onClick={() => onConnect('solflare')}
+            className="bg-[#fc7227] flex items-center justify-center gap-2"
+          >
+            <img src="/solflare_logo.svg" alt="Solflare" className="w-6 h-6" />
+            Connect with Solflare
+          </Button>
+        );
+      }
     }
 
     return (
