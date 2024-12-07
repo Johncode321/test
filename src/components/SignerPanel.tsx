@@ -3,11 +3,9 @@ import { Button } from './Button';
 import { MessageInput } from './MessageInput';
 import { SignatureDisplay } from './SignatureDisplay';
 import { WalletInfo } from './WalletInfo';
+import { ExternalLink } from 'lucide-react';
+import { isInAppBrowser, isPhantomBrowser, isSolflareBrowser } from '../utils/wallet';
 import { SolanaLogo } from './SolanaLogo';
-import phantomLogo from '../assets/phantom_logo.svg';
-import solflareLogo from '../assets/solflare_logo.svg';
-import phantomIcon from '../assets/phantom.svg';
-import solflareIcon from '../assets/solflare.svg';
 
 interface SignerPanelProps {
   connection: WalletConnection;
@@ -30,29 +28,63 @@ export const SignerPanel = ({
   onSign,
   onCopySignature,
 }: SignerPanelProps) => {
+  const inAppBrowser = isInAppBrowser();
+  const isPhantom = isPhantomBrowser();
+  const isSolflare = isSolflareBrowser();
   const isConnected = !!connection.publicKey;
 
-  const renderWalletButtons = () => (
-    <>
-      <Button 
-        variant="primary" 
-        onClick={() => onConnect('phantom')}
-        className="bg-[#ab9ff2] flex items-center justify-center gap-2"
-      >
-        <img src={phantomLogo} alt="Phantom" className="w-6 h-6" />
-        Connect with Phantom
-      </Button>
-      
-      <Button 
-        variant="primary" 
-        onClick={() => onConnect('solflare')}
-        className="bg-[#fc7227] flex items-center justify-center gap-2"
-      >
-        <img src={solflareLogo} alt="Solflare" className="w-6 h-6" />
-        Connect with Solflare
-      </Button>
-    </>
-  );
+  const renderWalletButtons = () => {
+    // Pour in-app browser Phantom, n'afficher que le bouton Phantom
+    if (inAppBrowser && isPhantom) {
+      return (
+        <Button 
+          variant="primary" 
+          onClick={() => onConnect('phantom')}
+          className="bg-[#ab9ff2] flex items-center justify-center gap-2"
+        >
+          <img src="/phantom_logo.svg" alt="Phantom" className="w-6 h-6" />
+          Connect with Phantom
+        </Button>
+      );
+    }
+
+    // Pour in-app browser Solflare, n'afficher que le bouton Solflare
+    if (inAppBrowser && isSolflare) {
+      return (
+        <Button 
+          variant="primary" 
+          onClick={() => onConnect('solflare')}
+          className="bg-[#fc7227] flex items-center justify-center gap-2"
+        >
+          <img src="/solflare_logo.svg" alt="Solflare" className="w-6 h-6" />
+          Connect with Solflare
+        </Button>
+      );
+    }
+
+    // Pour les navigateurs standards, afficher les deux boutons
+    return (
+      <>
+        <Button 
+          variant="primary" 
+          onClick={() => onConnect('phantom')}
+          className="bg-[#ab9ff2] flex items-center justify-center gap-2"
+        >
+          <img src="/phantom_logo.svg" alt="Phantom" className="w-6 h-6" />
+          {!inAppBrowser ? 'Open with Phantom' : 'Connect with Phantom'}
+        </Button>
+        
+        <Button 
+          variant="primary" 
+          onClick={() => onConnect('solflare')}
+          className="bg-[#fc7227] flex items-center justify-center gap-2"
+        >
+          <img src="/solflare_logo.svg" alt="Solflare" className="w-6 h-6" />
+          {!inAppBrowser ? 'Open with Solflare' : 'Connect with Solflare'}
+        </Button>
+      </>
+    );
+  };
 
   return (
     <div className="w-full max-w-md bg-gray-800/50 backdrop-blur-lg p-8 rounded-2xl border border-gray-700 shadow-xl">
@@ -72,7 +104,7 @@ export const SignerPanel = ({
         <div className="space-y-4">
           <div className="flex items-center gap-3 mb-6">
             <img 
-              src={connection.providerType === 'phantom' ? phantomIcon : solflareIcon} 
+              src={connection.providerType === 'phantom' ? '/phantom.svg' : '/solflare.svg'} 
               alt={connection.providerType === 'phantom' ? 'Phantom Logo' : 'Solflare Logo'} 
               className="w-10 h-10" 
             />
@@ -116,5 +148,3 @@ export const SignerPanel = ({
     </div>
   );
 };
-
-export default SignerPanel;
