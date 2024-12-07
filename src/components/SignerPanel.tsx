@@ -92,7 +92,7 @@ export const SignerPanel = ({
     );
   };
 
-      return (
+  return (
     <div className="w-full max-w-md bg-gray-800/50 backdrop-blur-lg p-8 rounded-2xl border border-gray-700 shadow-xl">
       {!isConnected ? (
         <div className="space-y-6">
@@ -102,14 +102,10 @@ export const SignerPanel = ({
             </div>
             <h1 className="text-2xl font-bold text-white mb-2">Solana Message Signer</h1>
             <p className="text-gray-400 text-sm">
-              {inAppBrowser (
-            "Sign your custom messages securely."
-          ) : (
-            <>
-              Sign your custom messages securely. <br />
-              Choose your wallet to get started.
-            </>
-          )}
+              {inAppBrowser 
+                ? "Connect with your wallet"
+                : "Open in your preferred wallet"}
+            </p>
           </div>
           
           {renderWalletButtons()}
