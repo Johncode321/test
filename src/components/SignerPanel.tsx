@@ -3,9 +3,11 @@ import { Button } from './Button';
 import { MessageInput } from './MessageInput';
 import { SignatureDisplay } from './SignatureDisplay';
 import { WalletInfo } from './WalletInfo';
-import { PenSquare, ExternalLink } from 'lucide-react';
-import { isInAppBrowser, isPhantomBrowser, isSolflareBrowser } from '../utils/wallet';
 import { SolanaLogo } from './SolanaLogo';
+import phantomLogo from '../assets/phantom_logo.svg';
+import solflareLogo from '../assets/solflare_logo.svg';
+import phantomIcon from '../assets/phantom.svg';
+import solflareIcon from '../assets/solflare.svg';
 
 interface SignerPanelProps {
   connection: WalletConnection;
@@ -28,69 +30,29 @@ export const SignerPanel = ({
   onSign,
   onCopySignature,
 }: SignerPanelProps) => {
-  const inAppBrowser = isInAppBrowser();
-  const isPhantom = isPhantomBrowser();
-  const isSolflare = isSolflareBrowser();
   const isConnected = !!connection.publicKey;
 
-  const renderWalletButtons = () => {
-    if (inAppBrowser) {
-      if (isPhantom) {
-        return (
-          <Button 
-            variant="primary" 
-            onClick={() => onConnect('phantom')}
-            className="bg-gradient-to-r from-purple-600 to-purple-700"
-          >
-            Connect with Phantom
-          </Button>
-        );
-      }
-      if (isSolflare) {
-        return (
-          <Button 
-            variant="primary" 
-            onClick={() => onConnect('solflare')}
-            className="bg-gradient-to-r from-orange-500 to-orange-600"
-          >
-            Connect with Solflare
-          </Button>
-        );
-      }
-    }
-
-    return (
-      <>
-        <Button 
-          variant="primary" 
-          onClick={() => onConnect('phantom')}
-          className="bg-gradient-to-r from-purple-600 to-purple-700 flex items-center justify-center gap-2"
-        >
-          {!inAppBrowser ? (
-            <>
-              Open with Phanton 
-            </>
-          ) : (
-            'Connect with Phantom'
-          )}
-        </Button>
-        
-        <Button 
-          variant="primary" 
-          onClick={() => onConnect('solflare')}
-          className="bg-gradient-to-r from-orange-500 to-orange-600 flex items-center justify-center gap-2"
-        >
-          {!inAppBrowser ? (
-            <>
-              Open with Solflare
-            </>
-          ) : (
-            'Connect with Solflare'
-          )}
-        </Button>
-      </>
-    );
-  };
+  const renderWalletButtons = () => (
+    <>
+      <Button 
+        variant="primary" 
+        onClick={() => onConnect('phantom')}
+        className="bg-[#ab9ff2] flex items-center justify-center gap-2"
+      >
+        <img src={phantomLogo} alt="Phantom" className="w-6 h-6" />
+        Connect with Phantom
+      </Button>
+      
+      <Button 
+        variant="primary" 
+        onClick={() => onConnect('solflare')}
+        className="bg-[#fc7227] flex items-center justify-center gap-2"
+      >
+        <img src={solflareLogo} alt="Solflare" className="w-6 h-6" />
+        Connect with Solflare
+      </Button>
+    </>
+  );
 
   return (
     <div className="w-full max-w-md bg-gray-800/50 backdrop-blur-lg p-8 rounded-2xl border border-gray-700 shadow-xl">
@@ -101,11 +63,7 @@ export const SignerPanel = ({
               <SolanaLogo className="w-20 h-20" />
             </div>
             <h1 className="text-2xl font-bold text-white mb-2">Solana Message Signer</h1>
-            <p className="text-gray-400 text-sm">
-              {inAppBrowser 
-                ? "Sign your custom messages securely."
-                : "Sign your custom messages securely."}
-            </p>
+            <p className="text-gray-400 text-sm">Sign your custom messages securely.</p>
           </div>
           
           {renderWalletButtons()}
@@ -113,9 +71,11 @@ export const SignerPanel = ({
       ) : (
         <div className="space-y-4">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center">
-              <PenSquare size={20} className="text-white" />
-            </div>
+            <img 
+              src={connection.providerType === 'phantom' ? phantomIcon : solflareIcon} 
+              alt={connection.providerType === 'phantom' ? 'Phantom Logo' : 'Solflare Logo'} 
+              className="w-10 h-10" 
+            />
             <div>
               <h2 className="text-lg font-bold text-white">Sign Message</h2>
               <p className="text-gray-400 text-sm">Connected with {connection.providerType}</p>
@@ -133,7 +93,7 @@ export const SignerPanel = ({
             variant="primary"
             onClick={onSign}
             disabled={!message}
-            className="bg-gradient-to-r from-purple-600 to-purple-700"
+            className={connection.providerType === 'phantom' ? 'bg-[#ab9ff2]' : 'bg-[#fc7227]'}
           >
             Sign Message
           </Button>
@@ -156,3 +116,5 @@ export const SignerPanel = ({
     </div>
   );
 };
+
+export default SignerPanel;
