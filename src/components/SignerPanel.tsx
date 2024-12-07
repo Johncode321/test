@@ -6,10 +6,6 @@ import { WalletInfo } from './WalletInfo';
 import { ExternalLink } from 'lucide-react';
 import { isInAppBrowser, isPhantomBrowser, isSolflareBrowser } from '../utils/wallet';
 import { SolanaLogo } from './SolanaLogo';
-import phantomLogo from '../assets/logo/phantom_logo.svg';
-import solflareLogo from '../assets/logo/solflare_logo.svg';
-import solflareIcon from '../assets/logo/solflare.svg';
-import phantomIcon from '../assets/logo/phantom.svg';
 
 interface SignerPanelProps {
   connection: WalletConnection;
@@ -38,35 +34,32 @@ export const SignerPanel = ({
   const isConnected = !!connection.publicKey;
 
   const renderWalletButtons = () => {
-    // Pour in-app browser Phantom, n'afficher que le bouton Phantom
-    if (inAppBrowser && isPhantom) {
+    if (isPhantom) {
       return (
         <Button 
           variant="primary" 
           onClick={() => onConnect('phantom')}
           className="bg-[#ab9ff2] flex items-center justify-center gap-2"
         >
-          <img src={phantomLogo} alt="Phantom" className="w-6 h-6" />
+          <img src="/phantom_logo.svg" alt="Phantom" className="w-6 h-6" />
           Connect with Phantom
         </Button>
       );
     }
 
-    // Pour in-app browser Solflare, n'afficher que le bouton Solflare
-    if (inAppBrowser && isSolflare) {
+    if (isSolflare) {
       return (
         <Button 
           variant="primary" 
           onClick={() => onConnect('solflare')}
           className="bg-[#fc7227] flex items-center justify-center gap-2"
         >
-          <img src={solflareLogo} alt="Solflare" className="w-6 h-6" />
+          <img src="/solflare_logo.svg" alt="Solflare" className="w-6 h-6" />
           Connect with Solflare
         </Button>
       );
     }
 
-    // Pour les navigateurs standards, afficher les deux boutons
     return (
       <>
         <Button 
@@ -74,7 +67,7 @@ export const SignerPanel = ({
           onClick={() => onConnect('phantom')}
           className="bg-[#ab9ff2] flex items-center justify-center gap-2"
         >
-          <img src={phantomLogo} alt="Phantom" className="w-6 h-6" />
+          <img src="/phantom_logo.svg" alt="Phantom" className="w-6 h-6" />
           {!inAppBrowser ? 'Open with Phantom' : 'Connect with Phantom'}
         </Button>
         
@@ -83,7 +76,7 @@ export const SignerPanel = ({
           onClick={() => onConnect('solflare')}
           className="bg-[#fc7227] flex items-center justify-center gap-2"
         >
-          <img src={solflareLogo} alt="Solflare" className="w-6 h-6" />
+          <img src="/solflare_logo.svg" alt="Solflare" className="w-6 h-6" />
           {!inAppBrowser ? 'Open with Solflare' : 'Connect with Solflare'}
         </Button>
       </>
@@ -99,7 +92,11 @@ export const SignerPanel = ({
               <SolanaLogo className="w-20 h-20" />
             </div>
             <h1 className="text-2xl font-bold text-white mb-2">Solana Message Signer</h1>
-            <p className="text-gray-400 text-sm">Sign your custom messages securely.</p>
+            <p className="text-gray-400 text-sm">
+              {inAppBrowser 
+                ? "Sign your custom messages securely."
+                : "Sign your custom messages securely."}
+            </p>
           </div>
           
           {renderWalletButtons()}
@@ -108,7 +105,7 @@ export const SignerPanel = ({
         <div className="space-y-4">
           <div className="flex items-center gap-3 mb-6">
             <img 
-              src={connection.providerType === 'phantom' ? phantomIcon : solflareIcon} 
+              src={connection.providerType === 'phantom' ? '/phantom.svg' : '/solflare.svg'} 
               alt={connection.providerType === 'phantom' ? 'Phantom Logo' : 'Solflare Logo'} 
               className="w-10 h-10" 
             />
