@@ -48,19 +48,7 @@ const renderWalletButtons = (onConnect) => {
     );
   }
 
-  // Si dans l'app Backpack, montrer uniquement le bouton Backpack
-  if (isBackpackBrowser() || !!window?.backpack?.solana) {
-  return (
-    <Button 
-      variant="primary"
-      onClick={() => onConnect('backpack')}
-      className="bg-[#6C5CE7] flex items-center justify-center gap-2 w-full"
-    >
-      <img src="/api/placeholder/24/24" alt="Backpack" className="w-6 h-6" />
-      Connect with Backpack
-    </Button>
-  );
-  }
+
 
   // Dans tous les autres cas, montrer tous les boutons
   return (
