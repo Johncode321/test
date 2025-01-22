@@ -14,7 +14,7 @@ interface SignerPanelProps {
   message: string;
   signature: string;
   onMessageChange: (message: string) => void;
-  onConnect: (type: 'phantom' | 'solflare') => void;
+  onConnect: (type: 'phantom' | 'solflare' | 'backpack') => void;
   onDisconnect: () => void;
   onSign: () => void;
   onCopySignature: () => void;
@@ -66,9 +66,9 @@ export const SignerPanel = ({
               Open with Solflare
             </Button>
 
-            {/* New wallet buttons */}
             <Button 
               variant="primary"
+              onClick={() => onConnect('backpack')}
               className="bg-[#6C5CE7] flex items-center justify-center gap-2 w-full"
             >
               <img src="/api/placeholder/24/24" alt="Backpack" className="w-6 h-6" />
