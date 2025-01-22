@@ -38,10 +38,8 @@ const getProvider = async (type: WalletProvider) => {
 
     if (type === 'phantom') {
       if (isTelegram) {
-        // Format deep link spécifique pour Telegram
         window.location.href = `phantom://browse/${encodedUrl}`;
       } else {
-        // Format standard pour les autres navigateurs
         window.location.href = `https://phantom.app/ul/browse/${encodedUrl}?ref=${refParam}`;
       }
       return null;
@@ -49,6 +47,11 @@ const getProvider = async (type: WalletProvider) => {
 
     if (type === 'solflare') {
       window.location.href = `https://solflare.com/ul/v1/browse/${encodedUrl}?ref=${refParam}`;
+      return null;
+    }
+
+    if (type === 'backpack') {
+      window.location.href = `https://backpack.app/browse/${encodedUrl}?ref=${refParam}`;
       return null;
     }
   }
@@ -63,6 +66,7 @@ const getProvider = async (type: WalletProvider) => {
       }
       return window.phantom?.solana;
     }
+
     if (type === 'solflare' && isSolflareBrowser()) {
       let attempts = 0;
       while (!window.solflare && attempts < 50) {
@@ -70,6 +74,15 @@ const getProvider = async (type: WalletProvider) => {
         attempts++;
       }
       return window.solflare;
+    }
+
+    if (type === 'backpack' && isBackpackBrowser()) {
+      let attempts = 0;
+      while (!window.backpack?.solana && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+      return window.backpack?.solana;
     }
   }
 
@@ -83,6 +96,13 @@ const getProvider = async (type: WalletProvider) => {
         attempts++;
       }
       provider = window.solflare;
+    } else if (type === 'backpack') {
+      let attempts = 0;
+      while (!window.backpack?.solana && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+      provider = window.backpack?.solana;
     } else {
       provider = window?.phantom?.solana;
     }
@@ -99,7 +119,8 @@ const getProvider = async (type: WalletProvider) => {
   if (!isMobile) {
     const downloadUrls = {
       phantom: 'https://phantom.app/download',
-      solflare: 'https://solflare.com/download'
+      solflare: 'https://solflare.com/download',
+      backpack: 'https://www.backpack.app/download'
     };
     window.open(downloadUrls[type], '_blank');
   }
@@ -131,10 +152,8 @@ export const useWallet = () => {
       const provider = await getProvider(type);
       if (!provider) return;
 
-      // Pour Solflare spécifiquement
       if (type === 'solflare') {
         try {
-          // Si déjà connecté, mettre à jour l'état
           if (provider.isConnected) {
             console.log("Solflare already connected, getting publicKey");
             const publicKey = await provider.publicKey;
@@ -157,6 +176,30 @@ export const useWallet = () => {
           console.error("Solflare specific error:", error);
           throw error;
         }
+      } else if (type === 'backpack') {
+        try {
+          if (provider.isConnected) {
+            console.log("Backpack already connected, getting publicKey");
+            const publicKey = await provider.publicKey;
+            if (publicKey) {
+              updateConnectionState(provider, publicKey, type);
+              return;
+            }
+          }
+
+          console.log("Attempting Backpack connection");
+          const response = await provider.connect();
+          await new Promise(resolve => setTimeout(resolve, 200));
+          
+          const publicKey = response?.publicKey || await provider.publicKey;
+          if (publicKey) {
+            console.log("Backpack connection successful");
+            updateConnectionState(provider, publicKey, type);
+          }
+        } catch (error) {
+          console.error("Backpack specific error:", error);
+          throw error;
+        }
       } else {
         const response = await provider.connect();
         if (response?.publicKey) {
@@ -175,20 +218,18 @@ export const useWallet = () => {
     try {
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       const isSolflareInApp = isSolflareBrowser() && isMobile;
+      const isBackpackInApp = isBackpackBrowser() && isMobile;
 
-      // Pour Solflare sur mobile
-      if (connection.providerType === 'solflare' && isSolflareInApp) {
+      if ((connection.providerType === 'solflare' && isSolflareInApp) || 
+          (connection.providerType === 'backpack' && isBackpackInApp)) {
         try {
           await connection.provider.disconnect();
           updateConnectionState(null, null, null);
-          // Pas de reload pour mobile
         } catch (error) {
-          console.error("Error disconnecting Solflare mobile:", error);
-          // Force disconnect
+          console.error(`Error disconnecting ${connection.providerType} mobile:`, error);
           updateConnectionState(null, null, null);
         }
       } else {
-        // Pour desktop et autres wallets
         await connection.provider.disconnect();
         updateConnectionState(null, null, null);
         setTimeout(() => window.location.reload(), 100);
@@ -199,7 +240,6 @@ export const useWallet = () => {
     }
   }, [connection.provider, connection.providerType, updateConnectionState]);
 
-  // Event listeners
   useEffect(() => {
     const provider = connection.provider;
     if (!provider) return;
@@ -208,7 +248,7 @@ export const useWallet = () => {
       if (publicKey) {
         updateConnectionState(provider, publicKey, connection.providerType);
       } else {
-        if (connection.providerType === 'solflare' && provider.isConnected) {
+        if ((connection.providerType === 'solflare' || connection.providerType === 'backpack') && provider.isConnected) {
           const currentKey = await provider.publicKey;
           if (currentKey) {
             updateConnectionState(provider, currentKey, connection.providerType);
@@ -241,3 +281,16 @@ export const useWallet = () => {
     isInAppBrowser: isInAppBrowser()
   };
 };
+
+// Pour TypeScript: déclaration des types globaux
+declare global {
+  interface Window {
+    phantom?: {
+      solana?: any;
+    };
+    solflare?: any;
+    backpack?: {
+      solana?: any;
+    };
+  }
+}
