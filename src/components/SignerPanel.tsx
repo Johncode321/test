@@ -171,6 +171,19 @@ export const SignerPanel = ({
 }: SignerPanelProps) => {
   const isConnected = !!connection.publicKey;
 
+  const getWalletIcon = () => {
+    switch(connection.providerType) {
+      case 'phantom':
+        return phantomIcon;
+      case 'backpack':
+        return backpackIcon;
+      case 'solflare':
+        return solflareIcon;
+      default:
+        return phantomIcon;
+    }
+  };
+
   return (
     <div className="w-full max-w-md bg-gray-800/50 backdrop-blur-lg p-8 rounded-2xl border border-gray-700 shadow-xl">
       {!isConnected ? (
@@ -193,7 +206,7 @@ export const SignerPanel = ({
         <div className="space-y-4">
           <div className="flex items-center gap-3 mb-6">
             <img 
-              src={connection.providerType === 'phantom' ? phantomIcon : solflareIcon : backpackIcon } 
+              src={getWalletIcon()}
               alt={`${connection.providerType} Logo`}
               className="w-10 h-10" 
             />
@@ -217,7 +230,7 @@ export const SignerPanel = ({
             disabled={!message}
             className={
               connection.providerType === 'phantom' ? 'bg-[#ab9ff2]' :
-              connection.providerType === 'backpack' ? 'bg-[#6C5CE7]' :
+              connection.providerType === 'backpack' ? 'bg-[#e33e3f]' :
               'bg-[#fc7227]'
             }
           >
