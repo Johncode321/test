@@ -4,70 +4,17 @@ import { MessageInput } from './MessageInput';
 import { SignatureDisplay } from './SignatureDisplay';
 import { WalletInfo } from './WalletInfo';
 import { SolanaLogo } from './SolanaLogo';
-
 import phantomLogo from '../assets/phantom_logo.svg';
 import solflareLogo from '../assets/solflare_logo.svg';
 import phantomIcon from '../assets/phantom.svg';
 import solflareIcon from '../assets/solflare.svg';
-
-// Define wallet options with their styles
-const walletOptions = [
-  {
-    id: 'phantom',
-    name: 'Phantom',
-    logo: phantomLogo,
-    bgColor: 'bg-[#ab9ff2]'
-  },
-  {
-    id: 'solflare',
-    name: 'Solflare',
-    logo: solflareLogo,
-    bgColor: 'bg-[#fc7227]'
-  },
-  {
-    id: 'backpack',
-    name: 'Backpack',
-    logo: "/api/placeholder/24/24",  // Placeholder for now
-    bgColor: 'bg-[#6C5CE7]'
-  },
-  {
-    id: 'atomic',
-    name: 'Atomic',
-    logo: "/api/placeholder/24/24",
-    bgColor: 'bg-[#2ecc71]'
-  },
-  {
-    id: 'exodus',
-    name: 'Exodus',
-    logo: "/api/placeholder/24/24",
-    bgColor: 'bg-[#3498db]'
-  },
-  {
-    id: 'mathwallet',
-    name: 'Math Wallet',
-    logo: "/api/placeholder/24/24",
-    bgColor: 'bg-[#e74c3c]'
-  },
-  {
-    id: 'trustwallet',
-    name: 'Trust Wallet',
-    logo: "/api/placeholder/24/24",
-    bgColor: 'bg-[#3498db]'
-  },
-  {
-    id: 'metamask',
-    name: 'MetaMask',
-    logo: "/api/placeholder/24/24",
-    bgColor: 'bg-[#f39c12]'
-  }
-];
 
 interface SignerPanelProps {
   connection: WalletConnection;
   message: string;
   signature: string;
   onMessageChange: (message: string) => void;
-  onConnect: (type: WalletProvider) => void;
+  onConnect: (type: 'phantom' | 'solflare') => void;
   onDisconnect: () => void;
   onSign: () => void;
   onCopySignature: () => void;
@@ -85,22 +32,6 @@ export const SignerPanel = ({
 }: SignerPanelProps) => {
   const isConnected = !!connection.publicKey;
 
-  const renderWalletButton = (wallet: WalletInfo) => (
-    <Button 
-      key={wallet.id}
-      variant="primary" 
-      onClick={() => onConnect(wallet.id)}
-      className={`${wallet.bgColor} flex items-center justify-center gap-2`}
-    >
-      <img 
-        src={wallet.logo} 
-        alt={`${wallet.name} logo`} 
-        className="w-6 h-6" 
-      />
-      Open with {wallet.name}
-    </Button>
-  );
-
   return (
     <div className="w-full max-w-md bg-gray-800/50 backdrop-blur-lg p-8 rounded-2xl border border-gray-700 shadow-xl">
       {!isConnected ? (
@@ -115,13 +46,79 @@ export const SignerPanel = ({
             </p>
           </div>
           
-          <div className="grid grid-cols-1 gap-4">
-            {walletOptions.map(renderWalletButton)}
+          <div className="space-y-4">
+            {/* Existing buttons */}
+            <Button 
+              variant="primary" 
+              onClick={() => onConnect('phantom')}
+              className="bg-[#ab9ff2] flex items-center justify-center gap-2 w-full"
+            >
+              <img src={phantomLogo} alt="Phantom" className="w-6 h-6" />
+              Open with Phantom
+            </Button>
+            
+            <Button 
+              variant="primary" 
+              onClick={() => onConnect('solflare')}
+              className="bg-[#fc7227] flex items-center justify-center gap-2 w-full"
+            >
+              <img src={solflareLogo} alt="Solflare" className="w-6 h-6" />
+              Open with Solflare
+            </Button>
+
+            {/* New wallet buttons */}
+            <Button 
+              variant="primary"
+              className="bg-[#6C5CE7] flex items-center justify-center gap-2 w-full"
+            >
+              <img src="/api/placeholder/24/24" alt="Backpack" className="w-6 h-6" />
+              Open with Backpack
+            </Button>
+
+            <Button 
+              variant="primary"
+              className="bg-[#2ecc71] flex items-center justify-center gap-2 w-full"
+            >
+              <img src="/api/placeholder/24/24" alt="Atomic" className="w-6 h-6" />
+              Open with Atomic
+            </Button>
+
+            <Button 
+              variant="primary"
+              className="bg-[#3498db] flex items-center justify-center gap-2 w-full"
+            >
+              <img src="/api/placeholder/24/24" alt="Exodus" className="w-6 h-6" />
+              Open with Exodus
+            </Button>
+
+            <Button 
+              variant="primary"
+              className="bg-[#e74c3c] flex items-center justify-center gap-2 w-full"
+            >
+              <img src="/api/placeholder/24/24" alt="Math Wallet" className="w-6 h-6" />
+              Open with Math Wallet
+            </Button>
+
+            <Button 
+              variant="primary"
+              className="bg-[#3498db] flex items-center justify-center gap-2 w-full"
+            >
+              <img src="/api/placeholder/24/24" alt="Trust Wallet" className="w-6 h-6" />
+              Open with Trust Wallet
+            </Button>
+
+            <Button 
+              variant="primary"
+              className="bg-[#f39c12] flex items-center justify-center gap-2 w-full"
+            >
+              <img src="/api/placeholder/24/24" alt="MetaMask" className="w-6 h-6" />
+              Open with MetaMask
+            </Button>
           </div>
         </div>
       ) : (
+        // Connected state UI remains the same
         <div className="space-y-4">
-          {/* Connected wallet UI remains the same */}
           <div className="flex items-center gap-3 mb-6">
             <img 
               src={connection.providerType === 'phantom' ? phantomIcon : solflareIcon} 
@@ -168,4 +165,4 @@ export const SignerPanel = ({
       )}
     </div>
   );
-};
+}
