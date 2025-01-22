@@ -197,18 +197,14 @@ const disconnectWallet = useCallback(async () => {
     if (!connection.provider || !connection.providerType) return;
 
     try {
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      const isSolflareInApp = isSolflareBrowser() && isMobile;
-
-      // Déconnecter d'abord
-      await connection.provider.disconnect();
-
-      // Mise à jour de l'état
+      // Mettre à jour l'état immédiatement pour éviter les flashs
       updateConnectionState(null, null, null);
 
-      // Uniquement recharger la page pour Phantom desktop, pas besoin de recharger pour les autres
-      if (connection.providerType === 'phantom' && !isMobile && !isInAppBrowser()) {
-        setTimeout(() => window.location.reload(), 50);
+      // Déconnecter le wallet ensuite
+      try {
+        await connection.provider.disconnect();
+      } catch (error) {
+        console.error("Error during provider disconnect:", error);
       }
 
     } catch (error) {
