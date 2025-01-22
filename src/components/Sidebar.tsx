@@ -3,20 +3,77 @@ import { Button } from './Button';
 import { MessageInput } from './MessageInput';
 import { SignatureDisplay } from './SignatureDisplay';
 import { WalletInfo } from './WalletInfo';
-import { Wallet, PenSquare } from 'lucide-react';
+import { SolanaLogo } from './SolanaLogo';
 
-interface SidebarProps {
+import phantomLogo from '../assets/phantom_logo.svg';
+import solflareLogo from '../assets/solflare_logo.svg';
+import phantomIcon from '../assets/phantom.svg';
+import solflareIcon from '../assets/solflare.svg';
+
+// Define wallet options with their styles
+const walletOptions = [
+  {
+    id: 'phantom',
+    name: 'Phantom',
+    logo: phantomLogo,
+    bgColor: 'bg-[#ab9ff2]'
+  },
+  {
+    id: 'solflare',
+    name: 'Solflare',
+    logo: solflareLogo,
+    bgColor: 'bg-[#fc7227]'
+  },
+  {
+    id: 'backpack',
+    name: 'Backpack',
+    logo: "/api/placeholder/24/24",  // Placeholder for now
+    bgColor: 'bg-[#6C5CE7]'
+  },
+  {
+    id: 'atomic',
+    name: 'Atomic',
+    logo: "/api/placeholder/24/24",
+    bgColor: 'bg-[#2ecc71]'
+  },
+  {
+    id: 'exodus',
+    name: 'Exodus',
+    logo: "/api/placeholder/24/24",
+    bgColor: 'bg-[#3498db]'
+  },
+  {
+    id: 'mathwallet',
+    name: 'Math Wallet',
+    logo: "/api/placeholder/24/24",
+    bgColor: 'bg-[#e74c3c]'
+  },
+  {
+    id: 'trustwallet',
+    name: 'Trust Wallet',
+    logo: "/api/placeholder/24/24",
+    bgColor: 'bg-[#3498db]'
+  },
+  {
+    id: 'metamask',
+    name: 'MetaMask',
+    logo: "/api/placeholder/24/24",
+    bgColor: 'bg-[#f39c12]'
+  }
+];
+
+interface SignerPanelProps {
   connection: WalletConnection;
   message: string;
   signature: string;
   onMessageChange: (message: string) => void;
-  onConnect: (type: 'phantom' | 'solflare') => void;
+  onConnect: (type: WalletProvider) => void;
   onDisconnect: () => void;
   onSign: () => void;
   onCopySignature: () => void;
 }
 
-export const Sidebar = ({
+export const SignerPanel = ({
   connection,
   message,
   signature,
@@ -25,39 +82,52 @@ export const Sidebar = ({
   onDisconnect,
   onSign,
   onCopySignature,
-}: SidebarProps) => {
+}: SignerPanelProps) => {
+  const isConnected = !!connection.publicKey;
+
+  const renderWalletButton = (wallet: WalletInfo) => (
+    <Button 
+      key={wallet.id}
+      variant="primary" 
+      onClick={() => onConnect(wallet.id)}
+      className={`${wallet.bgColor} flex items-center justify-center gap-2`}
+    >
+      <img 
+        src={wallet.logo} 
+        alt={`${wallet.name} logo`} 
+        className="w-6 h-6" 
+      />
+      Open with {wallet.name}
+    </Button>
+  );
+
   return (
-    <div className="w-full md:w-[400px] bg-gray-800/50 backdrop-blur-lg p-6 border-r border-gray-700">
-      {!connection.publicKey ? (
+    <div className="w-full max-w-md bg-gray-800/50 backdrop-blur-lg p-8 rounded-2xl border border-gray-700 shadow-xl">
+      {!isConnected ? (
         <div className="space-y-6">
-          <div className="text-center mb-8">
-            <div className="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Wallet size={24} className="text-white" />
+          <div className="text-center">
+            <div className="mb-6 flex justify-center">
+              <SolanaLogo className="w-20 h-20" />
             </div>
-            <h2 className="text-xl font-bold text-white">Connect Wallet</h2>
-            <p className="text-gray-400 text-sm mt-2">Choose your preferred wallet to continue</p>
+            <h1 className="text-2xl font-bold text-white mb-2">Solana Message Signer</h1>
+            <p className="text-gray-400 text-sm">
+              Connect your wallet to sign messages securely
+            </p>
           </div>
-          <Button 
-            variant="primary" 
-            onClick={() => onConnect('phantom')}
-            className="bg-gradient-to-r from-purple-600 to-purple-700"
-          >
-            Connect Phantom
-          </Button>
-          <Button 
-            variant="primary" 
-            onClick={() => onConnect('solflare')}
-            className="bg-gradient-to-r from-orange-500 to-orange-600"
-          >
-            Connect Solflare
-          </Button>
+          
+          <div className="grid grid-cols-1 gap-4">
+            {walletOptions.map(renderWalletButton)}
+          </div>
         </div>
       ) : (
         <div className="space-y-4">
+          {/* Connected wallet UI remains the same */}
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center">
-              <PenSquare size={20} className="text-white" />
-            </div>
+            <img 
+              src={connection.providerType === 'phantom' ? phantomIcon : solflareIcon} 
+              alt={`${connection.providerType} Logo`}
+              className="w-10 h-10" 
+            />
             <div>
               <h2 className="text-lg font-bold text-white">Sign Message</h2>
               <p className="text-gray-400 text-sm">Connected with {connection.providerType}</p>
@@ -69,13 +139,14 @@ export const Sidebar = ({
           <MessageInput
             value={message}
             onChange={onMessageChange}
+            providerType={connection.providerType}
           />
           
           <Button
             variant="primary"
             onClick={onSign}
             disabled={!message}
-            className="bg-gradient-to-r from-purple-600 to-purple-700"
+            className={connection.providerType === 'phantom' ? 'bg-[#ab9ff2]' : 'bg-[#fc7227]'}
           >
             Sign Message
           </Button>
