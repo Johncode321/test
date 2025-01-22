@@ -193,20 +193,26 @@ export const useWallet = () => {
     }
   }, [updateConnectionState]);
 
-const disconnectWallet = useCallback(async () => {
+  const disconnectWallet = useCallback(async () => {
     if (!connection.provider || !connection.providerType) return;
 
     try {
-      // Mettre à jour l'état immédiatement pour éviter les flashs
-      updateConnectionState(null, null, null);
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const isSolflareInApp = isSolflareBrowser() && isMobile;
 
-      // Déconnecter le wallet ensuite
-      try {
+      if (connection.providerType === 'solflare' && isSolflareInApp) {
+        try {
+          await connection.provider.disconnect();
+          updateConnectionState(null, null, null);
+        } catch (error) {
+          console.error("Error disconnecting Solflare mobile:", error);
+          updateConnectionState(null, null, null);
+        }
+      } else {
         await connection.provider.disconnect();
-      } catch (error) {
-        console.error("Error during provider disconnect:", error);
+        updateConnectionState(null, null, null);
+        setTimeout(() => window.location.reload(), 100);
       }
-
     } catch (error) {
       console.error("Error during disconnect:", error);
       updateConnectionState(null, null, null);
