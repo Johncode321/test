@@ -19,6 +19,22 @@ const isSolflareBrowser = () => {
   return userAgent.includes('solflare');
 };
 
+const isBackpackBrowser = () => {
+  const userAgent = navigator.userAgent.toLowerCase();
+  return userAgent.includes('backpack');
+};
+
+interface SignerPanelProps {
+  connection: WalletConnection;
+  message: string;
+  signature: string;
+  onMessageChange: (message: string) => void;
+  onConnect: (type: 'phantom' | 'solflare' | 'backpack') => void;
+  onDisconnect: () => void;
+  onSign: () => void;
+  onCopySignature: () => void;
+}
+
 const renderWalletButtons = (onConnect) => {
   // Si dans l'app Phantom, montrer uniquement le bouton Phantom
   if (isPhantomBrowser()) {
@@ -48,20 +64,19 @@ const renderWalletButtons = (onConnect) => {
     );
   }
 
+  // Si dans l'app Backpack, montrer uniquement le bouton Backpack
   if (isBackpackBrowser() || !!window?.backpack?.solana) {
-  return (
-    <Button 
-      variant="primary"
-      onClick={() => onConnect('backpack')}
-      className="bg-[#6C5CE7] flex items-center justify-center gap-2 w-full"
-    >
-      <img src="/api/placeholder/24/24" alt="Backpack" className="w-6 h-6" />
-      Connect with Backpack
-    </Button>
-  );
+    return (
+      <Button 
+        variant="primary"
+        onClick={() => onConnect('backpack')}
+        className="bg-[#6C5CE7] flex items-center justify-center gap-2 w-full"
+      >
+        <img src="/api/placeholder/24/24" alt="Backpack" className="w-6 h-6" />
+        Connect with Backpack
+      </Button>
+    );
   }
-
-
 
   // Dans tous les autres cas, montrer tous les boutons
   return (
@@ -142,7 +157,16 @@ const renderWalletButtons = (onConnect) => {
   );
 };
 
-export const SignerPanel = ({ connection, message, signature, onMessageChange, onConnect, onDisconnect, onSign, onCopySignature }) => {
+export const SignerPanel = ({ 
+  connection, 
+  message, 
+  signature, 
+  onMessageChange, 
+  onConnect, 
+  onDisconnect, 
+  onSign, 
+  onCopySignature 
+}: SignerPanelProps) => {
   const isConnected = !!connection.publicKey;
 
   return (
@@ -155,7 +179,7 @@ export const SignerPanel = ({ connection, message, signature, onMessageChange, o
             </div>
             <h1 className="text-2xl font-bold text-white mb-2">Solana Message Signer</h1>
             <p className="text-gray-400 text-sm">
-              {(isPhantomBrowser() || isSolflareBrowser())
+              {(isPhantomBrowser() || isSolflareBrowser() || isBackpackBrowser())
                 ? "Connect your wallet to sign messages"
                 : "Choose your wallet to sign messages"}
             </p>
