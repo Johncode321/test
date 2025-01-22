@@ -22,29 +22,18 @@ export const useMessageSigning = (connection: WalletConnection) => {
         try {
           console.log("Attempting to sign with Backpack...");
           const signedData = await connection.provider.signMessage(encodedMessage);
-          console.log("Backpack signature response:", signedData);
+          console.log("Raw Backpack signature:", signedData);
           
-          // Vérifier si signedData est déjà une chaîne base58
-          if (typeof signedData === 'string') {
-            setSignature(signedData);
-          } 
-          // Si c'est un Uint8Array ou un Buffer
-          else if (signedData instanceof Uint8Array || Buffer.isBuffer(signedData)) {
-            const base58Signature = encode(signedData);
-            setSignature(base58Signature);
-          }
-          // Si c'est un objet avec une propriété signature
-          else if (signedData?.signature) {
-            const base58Signature = encode(signedData.signature);
-            setSignature(base58Signature);
-          } else {
-            console.error("Unexpected signature format:", signedData);
-            throw new Error("Invalid signature format");
-          }
+          // Si c'est déjà une chaîne
+          const signature = typeof signedData === 'string' 
+            ? signedData 
+            : encode(signedData);
+
+          console.log("Final signature:", signature);
+          setSignature(signature);
         } catch (error) {
           console.error("Backpack signing error:", error);
           setSignature('');
-          throw error;
         }
       } else {
         // Pour Phantom et Solflare
