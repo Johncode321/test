@@ -21,7 +21,7 @@ export const WALLET_CONFIGS: WalletConfig[] = [
     id: 'backpack',
     name: 'Backpack',
     logo: '/api/placeholder/24/24',
-    bgColor: 'bg-[#6C5CE7]',
+    bgColor: 'bg-[#e33e3f]',
     connectionUrl: 'https://backpack.app/connect',
     downloadUrl: 'https://www.backpack.app/'
   },
