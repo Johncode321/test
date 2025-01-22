@@ -193,26 +193,24 @@ export const useWallet = () => {
     }
   }, [updateConnectionState]);
 
-  const disconnectWallet = useCallback(async () => {
+const disconnectWallet = useCallback(async () => {
     if (!connection.provider || !connection.providerType) return;
 
     try {
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       const isSolflareInApp = isSolflareBrowser() && isMobile;
 
-      if (connection.providerType === 'solflare' && isSolflareInApp) {
-        try {
-          await connection.provider.disconnect();
-          updateConnectionState(null, null, null);
-        } catch (error) {
-          console.error("Error disconnecting Solflare mobile:", error);
-          updateConnectionState(null, null, null);
-        }
-      } else {
-        await connection.provider.disconnect();
-        updateConnectionState(null, null, null);
-        setTimeout(() => window.location.reload(), 100);
+      // Déconnecter d'abord
+      await connection.provider.disconnect();
+
+      // Mise à jour de l'état
+      updateConnectionState(null, null, null);
+
+      // Uniquement recharger la page pour Phantom desktop, pas besoin de recharger pour les autres
+      if (connection.providerType === 'phantom' && !isMobile && !isInAppBrowser()) {
+        setTimeout(() => window.location.reload(), 50);
       }
+
     } catch (error) {
       console.error("Error during disconnect:", error);
       updateConnectionState(null, null, null);
