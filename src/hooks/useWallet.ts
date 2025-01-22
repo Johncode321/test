@@ -26,11 +26,31 @@ const isInAppBrowser = () => {
 const getProvider = async (type: WalletProvider) => {
   console.log(`Getting provider for ${type}`);
   
+  if (type === 'backpack') {
+    try {
+      // Wait for Backpack provider
+      let attempts = 0;
+      while (!window.backpack?.solana && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+      if (window.backpack?.solana) {
+        return window.backpack.solana;
+      }
+      // If Backpack is not available, open download page
+      window.open('https://www.backpack.app/download', '_blank');
+      return null;
+    } catch (error) {
+      console.error('Error getting Backpack provider:', error);
+      return null;
+    }
+  }
+
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   const isStandaloneBrowser = !isInAppBrowser();
   const isTelegram = navigator.userAgent.toLowerCase().includes('telegram');
 
-  // Si on est sur mobile mais pas dans un wallet browser
+  // Mobile deep linking
   if (isMobile && isStandaloneBrowser) {
     const dappUrl = 'https://test-beta-rouge-19.vercel.app';
     const encodedUrl = encodeURIComponent(dappUrl);
@@ -49,14 +69,9 @@ const getProvider = async (type: WalletProvider) => {
       window.location.href = `https://solflare.com/ul/v1/browse/${encodedUrl}?ref=${refParam}`;
       return null;
     }
-
-    if (type === 'backpack') {
-      window.location.href = `https://backpack.app/browse/${encodedUrl}?ref=${refParam}`;
-      return null;
-    }
   }
   
-  // Gestion des in-app browsers
+  // In-app browser detection
   if (isInAppBrowser()) {
     if (type === 'phantom' && isPhantomBrowser()) {
       let attempts = 0;
@@ -75,18 +90,9 @@ const getProvider = async (type: WalletProvider) => {
       }
       return window.solflare;
     }
-
-    if (type === 'backpack' && isBackpackBrowser()) {
-      let attempts = 0;
-      while (!window.backpack?.solana && attempts < 50) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        attempts++;
-      }
-      return window.backpack?.solana;
-    }
   }
 
-  // Pour les navigateurs desktop
+  // Desktop browser detection
   try {
     let provider = null;
     if (type === 'solflare') {
@@ -96,13 +102,6 @@ const getProvider = async (type: WalletProvider) => {
         attempts++;
       }
       provider = window.solflare;
-    } else if (type === 'backpack') {
-      let attempts = 0;
-      while (!window.backpack?.solana && attempts < 50) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        attempts++;
-      }
-      provider = window.backpack?.solana;
     } else {
       provider = window?.phantom?.solana;
     }
@@ -115,7 +114,7 @@ const getProvider = async (type: WalletProvider) => {
     console.error('Error getting desktop provider:', error);
   }
 
-  // Si on est sur desktop et que le wallet n'est pas installé
+  // Open download page if not installed
   if (!isMobile) {
     const downloadUrls = {
       phantom: 'https://phantom.app/download',
@@ -177,28 +176,10 @@ export const useWallet = () => {
           throw error;
         }
       } else if (type === 'backpack') {
-        try {
-          if (provider.isConnected) {
-            console.log("Backpack already connected, getting publicKey");
-            const publicKey = await provider.publicKey;
-            if (publicKey) {
-              updateConnectionState(provider, publicKey, type);
-              return;
-            }
-          }
-
-          console.log("Attempting Backpack connection");
-          const response = await provider.connect();
-          await new Promise(resolve => setTimeout(resolve, 200));
-          
-          const publicKey = response?.publicKey || await provider.publicKey;
-          if (publicKey) {
-            console.log("Backpack connection successful");
-            updateConnectionState(provider, publicKey, type);
-          }
-        } catch (error) {
-          console.error("Backpack specific error:", error);
-          throw error;
+        const response = await provider.connect();
+        if (response?.publicKey) {
+          console.log("Backpack connection successful");
+          updateConnectionState(provider, response.publicKey, type);
         }
       } else {
         const response = await provider.connect();
@@ -218,15 +199,13 @@ export const useWallet = () => {
     try {
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       const isSolflareInApp = isSolflareBrowser() && isMobile;
-      const isBackpackInApp = isBackpackBrowser() && isMobile;
 
-      if ((connection.providerType === 'solflare' && isSolflareInApp) || 
-          (connection.providerType === 'backpack' && isBackpackInApp)) {
+      if (connection.providerType === 'solflare' && isSolflareInApp) {
         try {
           await connection.provider.disconnect();
           updateConnectionState(null, null, null);
         } catch (error) {
-          console.error(`Error disconnecting ${connection.providerType} mobile:`, error);
+          console.error("Error disconnecting Solflare mobile:", error);
           updateConnectionState(null, null, null);
         }
       } else {
@@ -248,7 +227,7 @@ export const useWallet = () => {
       if (publicKey) {
         updateConnectionState(provider, publicKey, connection.providerType);
       } else {
-        if ((connection.providerType === 'solflare' || connection.providerType === 'backpack') && provider.isConnected) {
+        if (connection.providerType === 'solflare' && provider.isConnected) {
           const currentKey = await provider.publicKey;
           if (currentKey) {
             updateConnectionState(provider, currentKey, connection.providerType);
@@ -281,16 +260,3 @@ export const useWallet = () => {
     isInAppBrowser: isInAppBrowser()
   };
 };
-
-// Pour TypeScript: déclaration des types globaux
-declare global {
-  interface Window {
-    phantom?: {
-      solana?: any;
-    };
-    solflare?: any;
-    backpack?: {
-      solana?: any;
-    };
-  }
-}
