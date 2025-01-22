@@ -5,9 +5,11 @@ import { SignatureDisplay } from './SignatureDisplay';
 import { WalletInfo } from './WalletInfo';
 import { SolanaLogo } from './SolanaLogo';
 import phantomLogo from '../assets/phantom_logo.svg';
-import solflareLogo from '../assets/solflare_logo.svg';
 import phantomIcon from '../assets/phantom.svg';
+import solflareLogo from '../assets/solflare_logo.svg';
 import solflareIcon from '../assets/solflare.svg';
+import backpackLogo from '../assets/backpack_logo.svg';
+import backpackIcon from '../assets/backpack.svg';
 
 const isPhantomBrowser = () => {
   const userAgent = navigator.userAgent.toLowerCase();
@@ -72,7 +74,7 @@ const renderWalletButtons = (onConnect) => {
         onClick={() => onConnect('backpack')}
         className="bg-[#e33e3f] flex items-center justify-center gap-2 w-full"
       >
-        <img src="/api/placeholder/24/24" alt="Backpack" className="w-6 h-6" />
+        <img src={backpackLogo} alt="Backpack" className="w-6 h-6" />
         Connect with Backpack
       </Button>
     );
@@ -191,7 +193,7 @@ export const SignerPanel = ({
         <div className="space-y-4">
           <div className="flex items-center gap-3 mb-6">
             <img 
-              src={connection.providerType === 'phantom' ? phantomIcon : solflareIcon} 
+              src={connection.providerType === 'phantom' ? phantomIcon : solflareIcon : backpackIcon } 
               alt={`${connection.providerType} Logo`}
               className="w-10 h-10" 
             />
