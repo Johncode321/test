@@ -13,8 +13,13 @@ const isSolflareBrowser = () => {
   return userAgent.includes('solflare');
 };
 
+const isBackpackBrowser = () => {
+  const userAgent = navigator.userAgent.toLowerCase();
+  return userAgent.includes('backpack');
+};
+
 const isInAppBrowser = () => {
-  return isPhantomBrowser() || isSolflareBrowser();
+  return isPhantomBrowser() || isSolflareBrowser() || isBackpackBrowser();
 };
 
 // Get provider function
