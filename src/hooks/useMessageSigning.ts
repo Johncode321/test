@@ -13,27 +13,40 @@ export const useMessageSigning = (connection: WalletConnection) => {
 
   const signMessage = async () => {
     if (!connection.provider || !message) return;
-    console.log("Starting signature process with", connection.providerType);
+    
+    console.log("Provider type:", connection.providerType);
+    console.log("Available methods on provider:", Object.keys(connection.provider));
 
     try {
       const encodedMessage = new TextEncoder().encode(message);
 
       if (connection.providerType === 'backpack') {
         try {
-          console.log("Attempting to sign with Backpack...");
-          const signedData = await connection.provider.signMessage(encodedMessage);
-          console.log("Raw Backpack signature:", signedData);
+          // Log toutes les méthodes disponibles
+          console.log("Backpack provider methods:", Object.getOwnPropertyNames(connection.provider));
+          console.log("Is provider connected?", connection.provider.isConnected);
+          console.log("Public key:", connection.provider.publicKey?.toString());
           
-          // Si c'est déjà une chaîne
-          const signature = typeof signedData === 'string' 
-            ? signedData 
-            : encode(signedData);
+          // Essayer la méthode de signature standard
+          console.log("Attempting standard signature...");
+          const signedData = await connection.provider.signMessage(encodedMessage);
+          console.log("Standard signature result:", signedData);
 
-          console.log("Final signature:", signature);
-          setSignature(signature);
+          setSignature(signedData.toString());
         } catch (error) {
-          console.error("Backpack signing error:", error);
-          setSignature('');
+          console.error("Failed with standard signature, error:", error);
+          
+          try {
+            // Essayer la méthode alternative
+            console.log("Attempting alternative signature...");
+            const signedData = await connection.provider.sign(encodedMessage);
+            console.log("Alternative signature result:", signedData);
+            
+            setSignature(signedData.toString());
+          } catch (error) {
+            console.error("Alternative method also failed:", error);
+            setSignature('');
+          }
         }
       } else {
         // Pour Phantom et Solflare
