@@ -213,6 +213,7 @@ const disconnectWallet = useCallback(async () => {
         // Pour tous les autres wallets
         await connection.provider.disconnect();
         updateConnectionState(null, null, null);
+        window.location.reload();
       }
     } catch (error) {
       console.error("Error during disconnect:", error);
