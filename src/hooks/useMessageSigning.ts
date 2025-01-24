@@ -20,9 +20,24 @@ export const useMessageSigning = (connection: WalletConnection) => {
       if (connection.providerType === 'backpack') {
         try {
           const signedData = await connection.provider.signMessage(encodedMessage);
-          if (signedData) {
-            const base58Signature = encode(signedData);
-            setSignature(base58Signature);
+          console.log("Backpack signature response:", signedData);
+          
+          if (signedData && typeof signedData === 'object') {
+            if (signedData instanceof Uint8Array) {
+              setSignature(encode(signedData));
+            } else if ('signature' in signedData) {
+              setSignature(encode(signedData.signature));
+            } else if ('data' in signedData) {
+              setSignature(encode(signedData.data));
+            } else {
+              ['signatures', 'signed', 'signatureBytes'].some(key => {
+                if (signedData[key]) {
+                  setSignature(encode(signedData[key]));
+                  return true;
+                }
+                return false;
+              });
+            }
           }
         } catch (error) {
           console.error("Backpack signing error:", error);
@@ -30,8 +45,8 @@ export const useMessageSigning = (connection: WalletConnection) => {
         }
       } else {
         const signedMessage = await connection.provider.signMessage(encodedMessage, "utf8");
-        const base58Signature = encode(signedMessage.signature);
-        setSignature(base58Signature);
+        console.log("Standard wallet signature response:", signedMessage);
+        setSignature(encode(signedMessage.signature));
       }
     } catch (error) {
       console.error("Error during signing process:", error);
