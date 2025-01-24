@@ -26,12 +26,6 @@ const isBackpackBrowser = () => {
   return userAgent.includes('backpack');
 };
 
-// Vérification supplémentaire pour le in-app browser uniquement
-const isBackpackInAppBrowser = () => {
-  const userAgent = navigator.userAgent.toLowerCase();
-  return userAgent.includes('backpack');
-};
-
 interface SignerPanelProps {
   connection: WalletConnection;
   message: string;
@@ -44,13 +38,7 @@ interface SignerPanelProps {
 }
 
 const renderWalletButtons = (onConnect) => {
-  // Réinitialiser la détection de Backpack après déconnexion
-  const backpackWallet = window?.backpack?.solana;
-  if (backpackWallet) {
-    delete window.backpack.solana;
-  }
-  
-  // Si dans l'app Phantom
+  // Si dans l'app Phantom, montrer uniquement le bouton Phantom
   if (isPhantomBrowser()) {
     return (
       <Button 
@@ -79,7 +67,7 @@ const renderWalletButtons = (onConnect) => {
   }
 
   // Si dans l'app Backpack, montrer uniquement le bouton Backpack
-  if (isBackpackInAppBrowser()) {
+  if (isBackpackBrowser() || !!window?.backpack?.solana) {
     return (
       <Button 
         variant="primary"
@@ -207,7 +195,7 @@ export const SignerPanel = ({
             <h1 className="text-2xl font-bold text-white mb-2">Solana Message Signer</h1>
             <p className="text-gray-400 text-sm">
               {(isPhantomBrowser() || isSolflareBrowser() || isBackpackBrowser())
-                ? `Connect with ${isPhantomBrowser() ? 'Phantom' : isBackpackBrowser() ? 'Backpack' : 'Solflare'}`
+                ? "Connect your wallet to sign messages"
                 : "Choose your wallet to sign messages"}
             </p>
           </div>
