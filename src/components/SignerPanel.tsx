@@ -23,6 +23,14 @@ const isSolflareBrowser = () => {
 
 const isBackpackBrowser = () => {
   const userAgent = navigator.userAgent.toLowerCase();
+  const isInAppBrowser = userAgent.includes('backpack');
+  const hasBackpackWallet = typeof window !== 'undefined' && !!window?.backpack?.solana;
+  return isInAppBrowser || hasBackpackWallet;
+};
+
+// Vérification supplémentaire pour le in-app browser uniquement
+const isBackpackInAppBrowser = () => {
+  const userAgent = navigator.userAgent.toLowerCase();
   return userAgent.includes('backpack');
 };
 
