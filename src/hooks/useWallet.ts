@@ -211,7 +211,6 @@ export const useWallet = () => {
       } else {
         await connection.provider.disconnect();
         updateConnectionState(null, null, null);
-        setTimeout(() => window.location.reload(), 100);
       }
     } catch (error) {
       console.error("Error during disconnect:", error);
