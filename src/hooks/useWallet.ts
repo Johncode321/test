@@ -193,7 +193,7 @@ export const useWallet = () => {
     }
   }, [updateConnectionState]);
 
-  const disconnectWallet = useCallback(async () => {
+const disconnectWallet = useCallback(async () => {
     if (!connection.provider || !connection.providerType) return;
 
     try {
@@ -211,14 +211,13 @@ export const useWallet = () => {
       } else {
         await connection.provider.disconnect();
         updateConnectionState(null, null, null);
-        setTimeout(() => window.location.reload(), 100);
       }
     } catch (error) {
       console.error("Error during disconnect:", error);
       updateConnectionState(null, null, null);
     }
   }, [connection.provider, connection.providerType, updateConnectionState]);
-
+  
   useEffect(() => {
     const provider = connection.provider;
     if (!provider) return;
