@@ -201,11 +201,18 @@ const disconnectWallet = useCallback(async () => {
       const isSolflareInApp = isSolflareBrowser() && isMobile;
 
       if (connection.providerType === 'solflare' && isSolflareInApp) {
-        await connection.provider.disconnect();
+        try {
+          await connection.provider.disconnect();
+          updateConnectionState(null, null, null);
+        } catch (error) {
+          console.error("Error disconnecting Solflare mobile:", error);
+          updateConnectionState(null, null, null);
+        }
       } else {
         await connection.provider.disconnect();
+        updateConnectionState(null, null, null);
+        setTimeout(() => window.location.reload(), 100);
       }
-      updateConnectionState(null, null, null);
     } catch (error) {
       console.error("Error during disconnect:", error);
       updateConnectionState(null, null, null);
