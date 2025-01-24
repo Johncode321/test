@@ -67,7 +67,7 @@ const renderWalletButtons = (onConnect) => {
   }
 
   // Si dans l'app Backpack, montrer uniquement le bouton Backpack
-  if (isBackpackBrowser() || !!window?.backpack?.solana) {
+  if (isBackpackBrowser()) {
     return (
       <Button 
         variant="primary"
