@@ -19,38 +19,10 @@ export const useMessageSigning = (connection: WalletConnection) => {
 
       if (connection.providerType === 'backpack') {
         try {
-          const signedData = await connection.provider.signMessage(encodedMessage);
-          console.log("Backpack signature response:", signedData);
-          
-          // Vérifions la structure de l'objet reçu
-          if (signedData && typeof signedData === 'object') {
-            // Si c'est un Uint8Array ou Buffer
-            if (signedData instanceof Uint8Array) {
-              const base58Signature = encode(signedData);
-              setSignature(base58Signature);
-            }
-            // Si c'est un objet avec une propriété signature
-            else if ('signature' in signedData) {
-              const base58Signature = encode(signedData.signature);
-              setSignature(base58Signature);
-            }
-            // Si c'est un objet avec des données brutes
-            else if ('data' in signedData) {
-              const base58Signature = encode(signedData.data);
-              setSignature(base58Signature);
-            }
-            // Autres propriétés possibles
-            else {
-              const possibleKeys = ['signatures', 'signed', 'signatureBytes'];
-              for (const key of possibleKeys) {
-                if (key in signedData && signedData[key]) {
-                  const base58Signature = encode(signedData[key]);
-                  setSignature(base58Signature);
-                  break;
-                }
-              }
-            }
-          }
+          await new Promise(resolve => setTimeout(resolve, 100));
+          const signedMessage = await connection.provider.signMessage(encodedMessage);
+          const base58Signature = encode(signedMessage);
+          setSignature(base58Signature);
         } catch (error) {
           console.error("Backpack signing error:", error);
           setSignature('');
