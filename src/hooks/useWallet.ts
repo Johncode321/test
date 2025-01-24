@@ -2,33 +2,16 @@ import { useState, useEffect, useCallback } from 'react';
 import { PublicKey } from '@solana/web3.js';
 import { WalletConnection, WalletProvider } from '../types/wallet';
 
-// Utility functions
-const isPhantomBrowser = () => {
-  const userAgent = navigator.userAgent.toLowerCase();
-  return userAgent.includes('phantom');
-};
+const isPhantomBrowser = () => navigator.userAgent.toLowerCase().includes('phantom');
+const isSolflareBrowser = () => navigator.userAgent.toLowerCase().includes('solflare');
+const isBackpackBrowser = () => navigator.userAgent.toLowerCase().includes('backpack');
+const isInAppBrowser = () => isPhantomBrowser() || isSolflareBrowser() || isBackpackBrowser();
 
-const isSolflareBrowser = () => {
-  const userAgent = navigator.userAgent.toLowerCase();
-  return userAgent.includes('solflare');
-};
-
-const isBackpackBrowser = () => {
-  const userAgent = navigator.userAgent.toLowerCase();
-  return userAgent.includes('backpack');
-};
-
-const isInAppBrowser = () => {
-  return isPhantomBrowser() || isSolflareBrowser() || isBackpackBrowser();
-};
-
-// Get provider function
 const getProvider = async (type: WalletProvider) => {
   console.log(`Getting provider for ${type}`);
   
   if (type === 'backpack') {
     try {
-      // Wait for Backpack provider
       let attempts = 0;
       while (!window.backpack?.solana && attempts < 50) {
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -37,7 +20,6 @@ const getProvider = async (type: WalletProvider) => {
       if (window.backpack?.solana) {
         return window.backpack.solana;
       }
-      // If Backpack is not available, open download page
       window.open('https://www.backpack.app/download', '_blank');
       return null;
     } catch (error) {
@@ -50,18 +32,15 @@ const getProvider = async (type: WalletProvider) => {
   const isStandaloneBrowser = !isInAppBrowser();
   const isTelegram = navigator.userAgent.toLowerCase().includes('telegram');
 
-  // Mobile deep linking
   if (isMobile && isStandaloneBrowser) {
     const dappUrl = 'https://test-beta-rouge-19.vercel.app';
     const encodedUrl = encodeURIComponent(dappUrl);
     const refParam = encodeURIComponent(dappUrl);
 
     if (type === 'phantom') {
-      if (isTelegram) {
-        window.location.href = `phantom://browse/${encodedUrl}`;
-      } else {
-        window.location.href = `https://phantom.app/ul/browse/${encodedUrl}?ref=${refParam}`;
-      }
+      window.location.href = isTelegram 
+        ? `phantom://browse/${encodedUrl}`
+        : `https://phantom.app/ul/browse/${encodedUrl}?ref=${refParam}`;
       return null;
     }
 
@@ -70,8 +49,7 @@ const getProvider = async (type: WalletProvider) => {
       return null;
     }
   }
-  
-  // In-app browser detection
+
   if (isInAppBrowser()) {
     if (type === 'phantom' && isPhantomBrowser()) {
       let attempts = 0;
@@ -92,7 +70,6 @@ const getProvider = async (type: WalletProvider) => {
     }
   }
 
-  // Desktop browser detection
   try {
     let provider = null;
     if (type === 'solflare') {
@@ -102,6 +79,13 @@ const getProvider = async (type: WalletProvider) => {
         attempts++;
       }
       provider = window.solflare;
+    } else if (type === 'backpack') {
+      let attempts = 0;
+      while (!window.backpack?.solana && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+      provider = window.backpack?.solana;
     } else {
       provider = window?.phantom?.solana;
     }
@@ -114,7 +98,6 @@ const getProvider = async (type: WalletProvider) => {
     console.error('Error getting desktop provider:', error);
   }
 
-  // Open download page if not installed
   if (!isMobile) {
     const downloadUrls = {
       phantom: 'https://phantom.app/download',
@@ -176,10 +159,22 @@ export const useWallet = () => {
           throw error;
         }
       } else if (type === 'backpack') {
-        const response = await provider.connect();
-        if (response?.publicKey) {
-          console.log("Backpack connection successful");
-          updateConnectionState(provider, response.publicKey, type);
+        try {
+          console.log("Attempting Backpack connection");
+          let publicKey = await provider.publicKey;
+          
+          if (!publicKey) {
+            const response = await provider.connect();
+            publicKey = response?.publicKey;
+          }
+
+          if (publicKey) {
+            console.log("Backpack connection successful");
+            updateConnectionState(provider, publicKey, type);
+          }
+        } catch (error) {
+          console.error("Backpack specific error:", error);
+          throw error;
         }
       } else {
         const response = await provider.connect();
@@ -197,21 +192,8 @@ export const useWallet = () => {
     if (!connection.provider || !connection.providerType) return;
 
     try {
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      const isSolflareInApp = isSolflareBrowser() && isMobile;
-
-      if (connection.providerType === 'solflare' && isSolflareInApp) {
-        try {
-          await connection.provider.disconnect();
-          updateConnectionState(null, null, null);
-        } catch (error) {
-          console.error("Error disconnecting Solflare mobile:", error);
-          updateConnectionState(null, null, null);
-        }
-      } else {
-        await connection.provider.disconnect();
-        updateConnectionState(null, null, null);
-      }
+      await connection.provider.disconnect();
+      updateConnectionState(null, null, null);
     } catch (error) {
       console.error("Error during disconnect:", error);
       updateConnectionState(null, null, null);
@@ -225,34 +207,50 @@ export const useWallet = () => {
     const handleAccountChanged = async (publicKey: PublicKey | null) => {
       if (publicKey) {
         updateConnectionState(provider, publicKey, connection.providerType);
-      } else {
-        if (connection.providerType === 'solflare' && provider.isConnected) {
+      } else if (connection.providerType === 'backpack') {
+        // Pour Backpack, vérifier si toujours connecté malgré le lock/unlock
+        try {
           const currentKey = await provider.publicKey;
           if (currentKey) {
             updateConnectionState(provider, currentKey, connection.providerType);
             return;
           }
+        } catch (error) {
+          console.error("Error checking Backpack connection:", error);
         }
+        updateConnectionState(null, null, null);
+      } else {
         updateConnectionState(null, null, null);
       }
     };
 
-    const handleDisconnect = () => {
+    const handleDisconnect = async () => {
+      if (connection.providerType === 'backpack') {
+        try {
+          const isStillConnected = await provider.isConnected;
+          if (isStillConnected) {
+            const currentKey = await provider.publicKey;
+            if (currentKey) {
+              updateConnectionState(provider, currentKey, connection.providerType);
+              return;
+            }
+          }
+        } catch (error) {
+          console.error("Error checking Backpack connection status:", error);
+        }
+      }
       updateConnectionState(null, null, null);
     };
 
-    if (connection.providerType === 'backpack') {
-      provider.on('disconnect', () => {
-        console.log('Backpack disconnect event');
-        // Ne pas déconnecter sur le lock/unlock
-      });
-      provider.on('connect', handleAccountChanged);
-      provider.on('accountChanged', handleAccountChanged);
-    } else {
-      provider.on('connect', handleAccountChanged);
-      provider.on('disconnect', handleDisconnect);
-      provider.on('accountChanged', handleAccountChanged);
-    }
+    provider.on('connect', handleAccountChanged);
+    provider.on('disconnect', handleDisconnect);
+    provider.on('accountChanged', handleAccountChanged);
+
+    return () => {
+      provider.removeAllListeners?.('connect');
+      provider.removeAllListeners?.('disconnect');
+      provider.removeAllListeners?.('accountChanged');
+    };
   }, [connection.provider, connection.providerType, updateConnectionState]);
 
   return {
