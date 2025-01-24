@@ -200,25 +200,30 @@ export const useWallet = () => {
     }
   }, [connection.provider, connection.providerType, updateConnectionState]);
 
-  useEffect(() => {
+useEffect(() => {
     const provider = connection.provider;
     if (!provider) return;
 
     const handleAccountChanged = async (publicKey: PublicKey | null) => {
-      if (publicKey) {
-        updateConnectionState(provider, publicKey, connection.providerType);
-      } else if (connection.providerType === 'backpack') {
-        // Pour Backpack, vérifier si toujours connecté malgré le lock/unlock
+      if (connection.providerType === 'backpack') {
         try {
-          const currentKey = await provider.publicKey;
-          if (currentKey) {
-            updateConnectionState(provider, currentKey, connection.providerType);
+          // Check if Backpack is still connected and unlocked
+          const isConnected = await provider.isConnected;
+          const isUnlocked = await provider.publicKey;
+          
+          if (isConnected && isUnlocked) {
+            updateConnectionState(provider, isUnlocked, connection.providerType);
             return;
           }
+          
+          // If locked or disconnected, maintain provider but clear public key
+          updateConnectionState(provider, null, connection.providerType);
         } catch (error) {
-          console.error("Error checking Backpack connection:", error);
+          console.error("Error handling Backpack state change:", error);
+          updateConnectionState(null, null, null);
         }
-        updateConnectionState(null, null, null);
+      } else if (publicKey) {
+        updateConnectionState(provider, publicKey, connection.providerType);
       } else {
         updateConnectionState(null, null, null);
       }
