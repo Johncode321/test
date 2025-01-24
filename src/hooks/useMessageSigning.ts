@@ -19,18 +19,17 @@ export const useMessageSigning = (connection: WalletConnection) => {
 
       if (connection.providerType === 'backpack') {
         try {
-          await new Promise(resolve => setTimeout(resolve, 100));
-          const signedMessage = await connection.provider.signMessage(encodedMessage);
-          const base58Signature = encode(signedMessage);
-          setSignature(base58Signature);
+          const signedData = await connection.provider.signMessage(encodedMessage);
+          if (signedData) {
+            const base58Signature = encode(signedData);
+            setSignature(base58Signature);
+          }
         } catch (error) {
           console.error("Backpack signing error:", error);
           setSignature('');
         }
       } else {
-        // Pour Phantom et Solflare
         const signedMessage = await connection.provider.signMessage(encodedMessage, "utf8");
-        console.log("Standard wallet signature response:", signedMessage);
         const base58Signature = encode(signedMessage.signature);
         setSignature(base58Signature);
       }
