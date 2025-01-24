@@ -22,16 +22,13 @@ const isInAppBrowser = () => {
   return isPhantomBrowser() || isSolflareBrowser() || isBackpackBrowser();
 };
 
-const isMobileDevice = () => {
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-};
-
 // Get provider function
 const getProvider = async (type: WalletProvider) => {
   console.log(`Getting provider for ${type}`);
   
   if (type === 'backpack') {
     try {
+      // Wait for Backpack provider
       let attempts = 0;
       while (!window.backpack?.solana && attempts < 50) {
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -40,6 +37,7 @@ const getProvider = async (type: WalletProvider) => {
       if (window.backpack?.solana) {
         return window.backpack.solana;
       }
+      // If Backpack is not available, open download page
       window.open('https://www.backpack.app/download', '_blank');
       return null;
     } catch (error) {
@@ -48,13 +46,13 @@ const getProvider = async (type: WalletProvider) => {
     }
   }
 
-  const isMobile = isMobileDevice();
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   const isStandaloneBrowser = !isInAppBrowser();
   const isTelegram = navigator.userAgent.toLowerCase().includes('telegram');
 
   // Mobile deep linking
   if (isMobile && isStandaloneBrowser) {
-    const dappUrl = window.location.href;
+    const dappUrl = 'https://test-beta-rouge-19.vercel.app';
     const encodedUrl = encodeURIComponent(dappUrl);
     const refParam = encodeURIComponent(dappUrl);
 
@@ -156,6 +154,7 @@ export const useWallet = () => {
       if (type === 'solflare') {
         try {
           if (provider.isConnected) {
+            console.log("Solflare already connected, getting publicKey");
             const publicKey = await provider.publicKey;
             if (publicKey) {
               updateConnectionState(provider, publicKey, type);
@@ -163,11 +162,13 @@ export const useWallet = () => {
             }
           }
 
+          console.log("Attempting Solflare connection");
           const response = await provider.connect();
           await new Promise(resolve => setTimeout(resolve, 200));
           
           const publicKey = response?.publicKey || await provider.publicKey;
           if (publicKey) {
+            console.log("Solflare connection successful");
             updateConnectionState(provider, publicKey, type);
           }
         } catch (error) {
@@ -177,6 +178,7 @@ export const useWallet = () => {
       } else if (type === 'backpack') {
         const response = await provider.connect();
         if (response?.publicKey) {
+          console.log("Backpack connection successful");
           updateConnectionState(provider, response.publicKey, type);
         }
       } else {
@@ -195,21 +197,20 @@ export const useWallet = () => {
     if (!connection.provider || !connection.providerType) return;
 
     try {
-      const isMobile = isMobileDevice();
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       const isSolflareInApp = isSolflareBrowser() && isMobile;
 
       if (connection.providerType === 'solflare' && isSolflareInApp) {
-        await connection.provider.disconnect();
+        try {
+          await connection.provider.disconnect();
+          updateConnectionState(null, null, null);
+        } catch (error) {
+          console.error("Error disconnecting Solflare mobile:", error);
+          updateConnectionState(null, null, null);
+        }
       } else {
         await connection.provider.disconnect();
-      }
-
-      // Important: First update the state
-      updateConnectionState(null, null, null);
-      
-      // Then reload only if not on desktop
-      if (isMobileDevice() || isInAppBrowser()) {
-        setTimeout(() => window.location.reload(), 100);
+        updateConnectionState(null, null, null);
       }
     } catch (error) {
       console.error("Error during disconnect:", error);
