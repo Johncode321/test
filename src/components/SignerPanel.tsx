@@ -23,7 +23,7 @@ const isSolflareBrowser = () => {
 
 const isBackpackBrowser = () => {
   const userAgent = navigator.userAgent.toLowerCase();
-  return userAgent.includes('backpack');
+  return userAgent.includes('backpack') || !!window?.backpack?.solana;
 };
 
 // Vérification supplémentaire pour le in-app browser uniquement
