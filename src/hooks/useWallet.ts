@@ -241,15 +241,18 @@ export const useWallet = () => {
       updateConnectionState(null, null, null);
     };
 
-    provider.on('connect', handleAccountChanged);
-    provider.on('disconnect', handleDisconnect);
-    provider.on('accountChanged', handleAccountChanged);
-
-    return () => {
-      provider.removeAllListeners?.('connect');
-      provider.removeAllListeners?.('disconnect');
-      provider.removeAllListeners?.('accountChanged');
-    };
+    if (connection.providerType === 'backpack') {
+      provider.on('disconnect', () => {
+        console.log('Backpack disconnect event');
+        // Ne pas déconnecter sur le lock/unlock
+      });
+      provider.on('connect', handleAccountChanged);
+      provider.on('accountChanged', handleAccountChanged);
+    } else {
+      provider.on('connect', handleAccountChanged);
+      provider.on('disconnect', handleDisconnect);
+      provider.on('accountChanged', handleAccountChanged);
+    }
   }, [connection.provider, connection.providerType, updateConnectionState]);
 
   return {
