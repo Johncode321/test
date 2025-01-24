@@ -193,7 +193,7 @@ export const useWallet = () => {
     }
   }, [updateConnectionState]);
 
-const disconnectWallet = useCallback(async () => {
+  const disconnectWallet = useCallback(async () => {
     if (!connection.provider || !connection.providerType) return;
 
     try {
