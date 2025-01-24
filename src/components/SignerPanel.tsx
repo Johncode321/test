@@ -66,8 +66,9 @@ const renderWalletButtons = (onConnect) => {
     );
   }
 
-  // Si dans l'app Backpack, montrer uniquement le bouton Backpack
-  if (isBackpackBrowser() || !!window?.backpack?.solana) {
+  // Si dans l'app Backpack sur mobile, montrer uniquement le bouton Backpack
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  if (isMobile && (isBackpackBrowser() || !!window?.backpack?.solana)) {
     return (
       <Button 
         variant="primary"
