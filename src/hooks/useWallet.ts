@@ -2,11 +2,31 @@ import { useState, useEffect, useCallback } from 'react';
 import { PublicKey } from '@solana/web3.js';
 import { WalletConnection, WalletProvider } from '../types/wallet';
 
-const isPhantomBrowser = () => navigator.userAgent.toLowerCase().includes('phantom');
-const isSolflareBrowser = () => navigator.userAgent.toLowerCase().includes('solflare');
-const isBackpackBrowser = () => navigator.userAgent.toLowerCase().includes('backpack');
-const isInAppBrowser = () => isPhantomBrowser() || isSolflareBrowser() || isBackpackBrowser();
+// Utility functions
+const isPhantomBrowser = () => {
+  const userAgent = navigator.userAgent.toLowerCase();
+  return userAgent.includes('phantom');
+};
 
+const isSolflareBrowser = () => {
+  const userAgent = navigator.userAgent.toLowerCase();
+  return userAgent.includes('solflare');
+};
+
+const isBackpackBrowser = () => {
+  const userAgent = navigator.userAgent.toLowerCase();
+  return userAgent.includes('backpack');
+};
+
+const isInAppBrowser = () => {
+  return isPhantomBrowser() || isSolflareBrowser() || isBackpackBrowser();
+};
+
+const isMobileDevice = () => {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+};
+
+// Get provider function
 const getProvider = async (type: WalletProvider) => {
   console.log(`Getting provider for ${type}`);
   
@@ -17,32 +37,43 @@ const getProvider = async (type: WalletProvider) => {
         await new Promise(resolve => setTimeout(resolve, 100));
         attempts++;
       }
-      return window.backpack?.solana || (window.open('https://www.backpack.app/download', '_blank'), null);
+      if (window.backpack?.solana) {
+        return window.backpack.solana;
+      }
+      window.open('https://www.backpack.app/download', '_blank');
+      return null;
     } catch (error) {
       console.error('Error getting Backpack provider:', error);
       return null;
     }
   }
 
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  const isStandalone = !isInAppBrowser();
+  const isMobile = isMobileDevice();
+  const isStandaloneBrowser = !isInAppBrowser();
   const isTelegram = navigator.userAgent.toLowerCase().includes('telegram');
-  const dappUrl = 'https://test-beta-rouge-19.vercel.app';
-  const encodedUrl = encodeURIComponent(dappUrl);
 
-  if (isMobile && isStandalone) {
+  // Mobile deep linking
+  if (isMobile && isStandaloneBrowser) {
+    const dappUrl = window.location.href;
+    const encodedUrl = encodeURIComponent(dappUrl);
+    const refParam = encodeURIComponent(dappUrl);
+
     if (type === 'phantom') {
-      window.location.href = isTelegram 
-        ? `phantom://browse/${encodedUrl}`
-        : `https://phantom.app/ul/browse/${encodedUrl}?ref=${encodedUrl}`;
+      if (isTelegram) {
+        window.location.href = `phantom://browse/${encodedUrl}`;
+      } else {
+        window.location.href = `https://phantom.app/ul/browse/${encodedUrl}?ref=${refParam}`;
+      }
       return null;
     }
+
     if (type === 'solflare') {
-      window.location.href = `https://solflare.com/ul/v1/browse/${encodedUrl}?ref=${encodedUrl}`;
+      window.location.href = `https://solflare.com/ul/v1/browse/${encodedUrl}?ref=${refParam}`;
       return null;
     }
   }
-
+  
+  // In-app browser detection
   if (isInAppBrowser()) {
     if (type === 'phantom' && isPhantomBrowser()) {
       let attempts = 0;
@@ -52,6 +83,7 @@ const getProvider = async (type: WalletProvider) => {
       }
       return window.phantom?.solana;
     }
+
     if (type === 'solflare' && isSolflareBrowser()) {
       let attempts = 0;
       while (!window.solflare && attempts < 50) {
@@ -62,6 +94,7 @@ const getProvider = async (type: WalletProvider) => {
     }
   }
 
+  // Desktop browser detection
   try {
     let provider = null;
     if (type === 'solflare') {
@@ -83,6 +116,7 @@ const getProvider = async (type: WalletProvider) => {
     console.error('Error getting desktop provider:', error);
   }
 
+  // Open download page if not installed
   if (!isMobile) {
     const downloadUrls = {
       phantom: 'https://phantom.app/download',
@@ -107,7 +141,11 @@ export const useWallet = () => {
     publicKey: PublicKey | null, 
     type: WalletProvider | null
   ) => {
-    setConnection({ provider, publicKey, providerType: type });
+    setConnection({
+      provider,
+      publicKey,
+      providerType: type
+    });
   }, []);
 
   const connectWallet = useCallback(async (type: WalletProvider) => {
@@ -116,18 +154,30 @@ export const useWallet = () => {
       if (!provider) return;
 
       if (type === 'solflare') {
-        if (provider.isConnected) {
-          const publicKey = await provider.publicKey;
+        try {
+          if (provider.isConnected) {
+            const publicKey = await provider.publicKey;
+            if (publicKey) {
+              updateConnectionState(provider, publicKey, type);
+              return;
+            }
+          }
+
+          const response = await provider.connect();
+          await new Promise(resolve => setTimeout(resolve, 200));
+          
+          const publicKey = response?.publicKey || await provider.publicKey;
           if (publicKey) {
             updateConnectionState(provider, publicKey, type);
-            return;
           }
+        } catch (error) {
+          console.error("Solflare specific error:", error);
+          throw error;
         }
+      } else if (type === 'backpack') {
         const response = await provider.connect();
-        await new Promise(resolve => setTimeout(resolve, 200));
-        const publicKey = response?.publicKey || await provider.publicKey;
-        if (publicKey) {
-          updateConnectionState(provider, publicKey, type);
+        if (response?.publicKey) {
+          updateConnectionState(provider, response.publicKey, type);
         }
       } else {
         const response = await provider.connect();
@@ -145,20 +195,21 @@ export const useWallet = () => {
     if (!connection.provider || !connection.providerType) return;
 
     try {
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const isMobile = isMobileDevice();
       const isSolflareInApp = isSolflareBrowser() && isMobile;
 
-      await connection.provider.disconnect();
-      updateConnectionState(null, null, null);
-
-      if (window.localStorage) {
-        const walletKeys = ['walletName', 'wallet', 'backpack', 'phantom', 'solflare'];
-        walletKeys.forEach(key => window.localStorage.removeItem(key));
+      if (connection.providerType === 'solflare' && isSolflareInApp) {
+        await connection.provider.disconnect();
+      } else {
+        await connection.provider.disconnect();
       }
 
-      if (!isSolflareInApp) {
-        // Force UI update without page reload
-        setConnection(prev => ({ ...prev }));
+      // Important: First update the state
+      updateConnectionState(null, null, null);
+      
+      // Then reload only if not on desktop
+      if (isMobileDevice() || isInAppBrowser()) {
+        setTimeout(() => window.location.reload(), 100);
       }
     } catch (error) {
       console.error("Error during disconnect:", error);
@@ -185,7 +236,9 @@ export const useWallet = () => {
       }
     };
 
-    const handleDisconnect = () => updateConnectionState(null, null, null);
+    const handleDisconnect = () => {
+      updateConnectionState(null, null, null);
+    };
 
     provider.on('connect', handleAccountChanged);
     provider.on('disconnect', handleDisconnect);
