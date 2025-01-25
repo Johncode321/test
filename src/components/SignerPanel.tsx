@@ -182,8 +182,8 @@ export const SignerPanel = ({
         return backpackIcon;
       case 'solflare':
         return solflareIcon;
-      case 'Trustwallet':
-        return TrustwalletIcon;
+      case 'trustwallet':
+        return trustwalletIcon;
       default:
         return phantomIcon;
     }
