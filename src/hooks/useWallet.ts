@@ -27,6 +27,16 @@ const getProvider = async (type: WalletProvider) => {
       console.error('Error getting Backpack provider:', error);
       return null;
     }
+
+    if (type === 'atomic') {
+    let attempts = 0;
+    while (!window.atomic?.solana && attempts < 50) {
+    await new Promise(resolve => setTimeout(resolve, 100));
+    attempts++;
+    }
+    return window.atomic?.solana;
+    }
+    
   }
 
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -54,6 +64,8 @@ const getProvider = async (type: WalletProvider) => {
       window.location.href = `https://link.trustwallet.com/open_url?coin=501&url=${encodedUrl}`;
       return null;
     }
+
+    
   }
 
   if (isInAppBrowser()) {
