@@ -11,6 +11,7 @@ import solflareIcon from '../assets/solflare.svg';
 import backpackLogo from '../assets/backpack_logo.svg';
 import backpackIcon from '../assets/backpack.svg';
 import trustlogo from '../assets/trustlogo.svg';
+import atomicIcon from '../assets/atomic.svg';
 
 const isPhantomBrowser = () => navigator.userAgent.toLowerCase().includes('phantom');
 const isSolflareBrowser = () => navigator.userAgent.toLowerCase().includes('solflare');
@@ -113,11 +114,11 @@ const renderWalletButtons = (onConnect) => {
 
       <Button 
         variant="primary"
-        disabled
-        className="bg-[#113355] flex items-center justify-center gap-2 w-full opacity-50 cursor-not-allowed"
+        onClick={() => onConnect('atomic')}
+        className="bg-[#2ecc71] flex items-center justify-center gap-2 w-full"
       >
-        <img src="/api/placeholder/24/24" alt="Atomic" className="w-6 h-6" />
-        Open with Atomic
+      <img src="/atomic_logo.svg" alt="Atomic" className="w-6 h-6" />
+      Open with Atomic
       </Button>
 
       <Button 
