@@ -23,7 +23,7 @@ interface SignerPanelProps {
   message: string;
   signature: string;
   onMessageChange: (message: string) => void;
-  onConnect: (type: 'phantom' | 'solflare' | 'backpack' | 'trustwallet' | 'Atomic') => void;
+  onConnect: (type: 'phantom' | 'solflare' | 'backpack' | 'trustwallet' | 'atomic') => void;
   onDisconnect: () => void;
   onSign: () => void;
   onCopySignature: () => void;
