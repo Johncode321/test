@@ -49,6 +49,11 @@ const getProvider = async (type: WalletProvider) => {
       window.location.href = `https://solflare.com/ul/v1/browse/${encodedUrl}?ref=${refParam}`;
       return null;
     }
+
+    if (type === 'trustwallet') {
+      window.location.href = `https://link.trustwallet.com/open_url?coin=501&url=${encodedUrl}`;
+      return null;
+    }
   }
 
   if (isInAppBrowser()) {
@@ -69,6 +74,15 @@ const getProvider = async (type: WalletProvider) => {
       }
       return window.solflare;
     }
+
+    if (type === 'trustwallet' && isTrustWalletBrowser()) {
+      let attempts = 0;
+      while (!window.trustwallet?.solana && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+      return window.trustwallet?.solana;
+    }
   }
 
   try {
@@ -87,6 +101,13 @@ const getProvider = async (type: WalletProvider) => {
         attempts++;
       }
       provider = window.backpack?.solana;
+    } else if (type === 'trustwallet') {
+      let attempts = 0;
+      while (!window.trustwallet?.solana && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+      provider = window.trustwallet?.solana;
     } else {
       provider = window?.phantom?.solana;
     }
@@ -103,7 +124,8 @@ const getProvider = async (type: WalletProvider) => {
     const downloadUrls = {
       phantom: 'https://phantom.app/download',
       solflare: 'https://solflare.com/download',
-      backpack: 'https://www.backpack.app/download'
+      backpack: 'https://www.backpack.app/download',
+      trustwallet: 'https://trustwallet.com/download'
     };
     window.open(downloadUrls[type], '_blank');
   }
@@ -177,6 +199,24 @@ export const useWallet = () => {
           console.error("Backpack specific error:", error);
           throw error;
         }
+      } else if (type === 'trustwallet') {
+        try {
+          console.log("Attempting Trust Wallet connection");
+          let publicKey = await provider.publicKey;
+          
+          if (!publicKey) {
+            const response = await provider.connect();
+            publicKey = response?.publicKey;
+          }
+
+          if (publicKey) {
+            console.log("Trust Wallet connection successful");
+            updateConnectionState(provider, publicKey, type);
+          }
+        } catch (error) {
+          console.error("Trust Wallet specific error:", error);
+          throw error;
+        }
       } else {
         const response = await provider.connect();
         if (response?.publicKey) {
@@ -201,14 +241,13 @@ export const useWallet = () => {
     }
   }, [connection.provider, connection.providerType, updateConnectionState]);
 
-useEffect(() => {
+  useEffect(() => {
     const provider = connection.provider;
     if (!provider) return;
 
     const handleAccountChanged = async (publicKey: PublicKey | null) => {
       if (connection.providerType === 'backpack') {
         try {
-          // Check if Backpack is still connected and unlocked
           const isConnected = await provider.isConnected;
           const isUnlocked = await provider.publicKey;
           
@@ -217,7 +256,6 @@ useEffect(() => {
             return;
           }
           
-          // If locked or disconnected, maintain provider but clear public key
           updateConnectionState(provider, null, connection.providerType);
         } catch (error) {
           console.error("Error handling Backpack state change:", error);
