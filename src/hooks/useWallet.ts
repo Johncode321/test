@@ -5,7 +5,8 @@ import { WalletConnection, WalletProvider } from '../types/wallet';
 const isPhantomBrowser = () => navigator.userAgent.toLowerCase().includes('phantom');
 const isSolflareBrowser = () => navigator.userAgent.toLowerCase().includes('solflare');
 const isBackpackBrowser = () => navigator.userAgent.toLowerCase().includes('backpack');
-const isInAppBrowser = () => isPhantomBrowser() || isSolflareBrowser() || isBackpackBrowser();
+const isTrustWalletBrowser = () => navigator.userAgent.toLowerCase().includes('trust');
+const isInAppBrowser = () => isPhantomBrowser() || isSolflareBrowser() || isBackpackBrowser() || isTrustWalletBrowser();
 
 const getProvider = async (type: WalletProvider) => {
   console.log(`Getting provider for ${type}`);
