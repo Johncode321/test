@@ -234,6 +234,7 @@ export const SignerPanel = ({
             className={
               connection.providerType === 'phantom' ? 'bg-[#ab9ff2]' :
               connection.providerType === 'backpack' ? 'bg-[#e33e3f]' :
+              connection.providerType === 'trustwallet' ? 'bg-[#0500ff]' :
               'bg-[#fc7227]'
             }
           >
