@@ -11,7 +11,7 @@ import solflareIcon from '../assets/solflare.svg';
 import backpackLogo from '../assets/backpack_logo.svg';
 import backpackIcon from '../assets/backpack.svg';
 import trustlogo from '../assets/trustlogo.svg';
-import atomicIcon from '../assets/atomic.svg';
+import atomicIcon from '../assets/trustlogo.svg';
 
 const isPhantomBrowser = () => navigator.userAgent.toLowerCase().includes('phantom');
 const isSolflareBrowser = () => navigator.userAgent.toLowerCase().includes('solflare');
