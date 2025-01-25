@@ -21,7 +21,7 @@ interface Window {
   trustwallet?: {
     solana?: any;
   };
-  atomic?: {
+  atomicwallet?: {
     solana?: any;
   };
   mathwallet?: {
