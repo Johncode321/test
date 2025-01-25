@@ -12,34 +12,23 @@ import backpackLogo from '../assets/backpack_logo.svg';
 import backpackIcon from '../assets/backpack.svg';
 import trustlogo from '../assets/trustlogo.svg';
 
-const isPhantomBrowser = () => {
-  const userAgent = navigator.userAgent.toLowerCase();
-  return userAgent.includes('phantom');
-};
-
-const isSolflareBrowser = () => {
-  const userAgent = navigator.userAgent.toLowerCase();
-  return userAgent.includes('solflare');
-};
-
-const isBackpackBrowser = () => {
-  const userAgent = navigator.userAgent.toLowerCase();
-  return userAgent.includes('backpack');
-};
+const isPhantomBrowser = () => navigator.userAgent.toLowerCase().includes('phantom');
+const isSolflareBrowser = () => navigator.userAgent.toLowerCase().includes('solflare');
+const isBackpackBrowser = () => navigator.userAgent.toLowerCase().includes('backpack');
+const isTrustWalletBrowser = () => navigator.userAgent.toLowerCase().includes('trustwallet');
 
 interface SignerPanelProps {
   connection: WalletConnection;
   message: string;
   signature: string;
   onMessageChange: (message: string) => void;
-  onConnect: (type: 'phantom' | 'solflare' | 'backpack') => void;
+  onConnect: (type: 'phantom' | 'solflare' | 'backpack' | 'trustwallet') => void;
   onDisconnect: () => void;
   onSign: () => void;
   onCopySignature: () => void;
 }
 
 const renderWalletButtons = (onConnect) => {
-  // Si dans l'app Phantom, montrer uniquement le bouton Phantom
   if (isPhantomBrowser()) {
     return (
       <Button 
@@ -53,7 +42,6 @@ const renderWalletButtons = (onConnect) => {
     );
   }
 
-  // Si dans l'app Solflare, montrer uniquement le bouton Solflare
   if (isSolflareBrowser()) {
     return (
       <Button 
@@ -67,7 +55,6 @@ const renderWalletButtons = (onConnect) => {
     );
   }
 
-  // Si dans l'app Backpack sur mobile, montrer uniquement le bouton Backpack
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   if (isMobile && (isBackpackBrowser() || !!window?.backpack?.solana)) {
     return (
@@ -82,7 +69,19 @@ const renderWalletButtons = (onConnect) => {
     );
   }
 
-  // Dans tous les autres cas, montrer tous les boutons
+  if (isTrustWalletBrowser()) {
+    return (
+      <Button 
+        variant="primary"
+        onClick={() => onConnect('trustwallet')}
+        className="bg-[#0500ff] flex items-center justify-center gap-2 w-full"
+      >
+        <img src={trustlogo} alt="Trust Wallet" className="w-6 h-6" />
+        Connect with Trust Wallet
+      </Button>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <Button 
@@ -112,7 +111,6 @@ const renderWalletButtons = (onConnect) => {
         Open with Backpack
       </Button>
 
-      {/* Boutons désactivés */}
       <Button 
         variant="primary"
         disabled
@@ -181,8 +179,8 @@ export const SignerPanel = ({
         return backpackIcon;
       case 'solflare':
         return solflareIcon;
-      case 'Trustwallet':
-        return TrustwalletIcon;
+      case 'trustwallet':
+        return trustlogo;
       default:
         return phantomIcon;
     }
@@ -198,7 +196,7 @@ export const SignerPanel = ({
             </div>
             <h1 className="text-2xl font-bold text-white mb-2">Solana Message Signer</h1>
             <p className="text-gray-400 text-sm">
-              {(isPhantomBrowser() || isSolflareBrowser() || isBackpackBrowser())
+              {(isPhantomBrowser() || isSolflareBrowser() || isBackpackBrowser() || isTrustWalletBrowser())
                 ? "Connect your wallet to sign messages"
                 : "Choose your wallet to sign messages"}
             </p>
