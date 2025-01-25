@@ -17,6 +17,8 @@ const isPhantomBrowser = () => navigator.userAgent.toLowerCase().includes('phant
 const isSolflareBrowser = () => navigator.userAgent.toLowerCase().includes('solflare');
 const isBackpackBrowser = () => navigator.userAgent.toLowerCase().includes('backpack');
 const isTrustWalletBrowser = () => navigator.userAgent.toLowerCase().includes('trustwallet');
+const isAtomicBrowser = () => navigator.userAgent.toLowerCase().includes('atomicwallet');
+
 
 interface SignerPanelProps {
   connection: WalletConnection;
@@ -30,6 +32,20 @@ interface SignerPanelProps {
 }
 
 const renderWalletButtons = (onConnect) => {
+  
+  if (isAtomicBrowser()) {
+  return (
+    <Button 
+      variant="primary"
+      onClick={() => onConnect('atomic')}
+      className="bg-[#2ecc71] flex items-center justify-center gap-2 w-full"
+    >
+      <img src={atomicIcon} alt="Atomic" className="w-6 h-6" />
+      Connect with Atomic
+    </Button>
+  );
+  }
+  
   if (isPhantomBrowser()) {
     return (
       <Button 
@@ -211,7 +227,7 @@ export const SignerPanel = ({
             </div>
             <h1 className="text-2xl font-bold text-white mb-2">Solana Message Signer</h1>
             <p className="text-gray-400 text-sm">
-              {(isPhantomBrowser() || isSolflareBrowser() || isBackpackBrowser() || isTrustWalletBrowser())
+            {(isPhantomBrowser() || isSolflareBrowser() || isBackpackBrowser() || isTrustWalletBrowser() || isAtomicBrowser())
                 ? "Connect your wallet to sign messages"
                 : "Choose your wallet to sign messages"}
             </p>
