@@ -23,7 +23,7 @@ interface SignerPanelProps {
   message: string;
   signature: string;
   onMessageChange: (message: string) => void;
-  onConnect: (type: 'phantom' | 'solflare' | 'backpack' | 'trustwallet') => void;
+  onConnect: (type: 'phantom' | 'solflare' | 'backpack' | 'trustwallet' | 'Atomic') => void;
   onDisconnect: () => void;
   onSign: () => void;
   onCopySignature: () => void;
@@ -117,7 +117,7 @@ const renderWalletButtons = (onConnect) => {
         onClick={() => onConnect('atomic')}
         className="bg-[#2ecc71] flex items-center justify-center gap-2 w-full"
       >
-      <img src="/atomic_logo.svg" alt="Atomic" className="w-6 h-6" />
+        <img src={atomicIcon} alt="Atomic" className="w-6 h-6" />
       Open with Atomic
       </Button>
 
@@ -249,6 +249,7 @@ export const SignerPanel = ({
               connection.providerType === 'phantom' ? 'bg-[#ab9ff2]' :
               connection.providerType === 'backpack' ? 'bg-[#e33e3f]' :
               connection.providerType === 'trustwallet' ? 'bg-[#0500ff]' :
+              connection.providerType === 'atomic' ? 'bg-[#2ecc71]' :
               'bg-[#fc7227]'
             }
           >
