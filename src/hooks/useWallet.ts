@@ -10,6 +10,28 @@ const isInAppBrowser = () => isPhantomBrowser() || isSolflareBrowser() || isBack
 
 const getProvider = async (type: WalletProvider) => {
   console.log(`Getting provider for ${type}`);
+
+  if (type === 'atomic') {
+    try {
+      let attempts = 0;
+      // Vérifiez si window.atomicwallet est disponible
+      while (!window.atomicwallet?.solana && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+      
+      if (window.atomicwallet?.solana) {
+        return window.atomicwallet.solana;
+      } else {
+        // Rediriger vers la page de téléchargement d'Atomic
+        window.open('https://atomicwallet.io/download', '_blank');
+        return null;
+      }
+    } catch (error) {
+      console.error('Error getting Atomic provider:', error);
+      return null;
+    }
+  }
   
   if (type === 'backpack') {
     try {
