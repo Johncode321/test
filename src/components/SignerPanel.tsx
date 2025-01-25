@@ -11,7 +11,7 @@ import solflareIcon from '../assets/solflare.svg';
 import backpackLogo from '../assets/backpack_logo.svg';
 import backpackIcon from '../assets/backpack.svg';
 import trustlogo from '../assets/trustlogo.svg';
-
+import trustIcon from '../assets/trustIcon.svg';
 
 const isPhantomBrowser = () => {
   const userAgent = navigator.userAgent.toLowerCase();
@@ -182,6 +182,8 @@ export const SignerPanel = ({
         return backpackIcon;
       case 'solflare':
         return solflareIcon;
+      case 'Trustwallet':
+        return TrustwalletIcon;
       default:
         return phantomIcon;
     }
