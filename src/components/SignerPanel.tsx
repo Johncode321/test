@@ -107,7 +107,7 @@ const renderWalletButtons = (onConnect) => {
         onClick={() => onConnect('backpack')}
         className="bg-[#e33e3f] flex items-center justify-center gap-2 w-full"
       >
-        <img src="{backpackLogo}" alt="Backpack" className="w-6 h-6" />
+        <img src={backpackLogo} alt="Backpack" className="w-6 h-6" />
         Open with Backpack
       </Button>
 
