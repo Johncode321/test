@@ -129,15 +129,17 @@ const renderWalletButtons = (onConnect) => {
         Open with Exodus
       </Button>
 
-      <Button 
+      
+       <Button 
         variant="primary"
         disabled
-        className="bg-[#e74c3c] flex items-center justify-center gap-2 w-full opacity-50 cursor-not-allowed"
+        className="bg-[#3498db] flex items-center justify-center gap-2 w-full opacity-50 cursor-not-allowed"
       >
-        <img src="/api/placeholder/24/24" alt="Math Wallet" className="w-6 h-6" />
-        Open with Math Wallet
-      </Button>
+        <img src="/api/placeholder/24/24" alt="Exodus" className="w-6 h-6" />
+        Open with Glow
+      </Button>     
 
+      
       <Button 
         variant="primary"
         onClick={() => onConnect('trustwallet')}
@@ -155,6 +157,16 @@ const renderWalletButtons = (onConnect) => {
         <img src="/api/placeholder/24/24" alt="MetaMask" className="w-6 h-6" />
         Open with MetaMask
       </Button>
+
+      <Button 
+        variant="primary"
+        disabled
+        className="bg-[#e74c3c] flex items-center justify-center gap-2 w-full opacity-50 cursor-not-allowed"
+      >
+        <img src="/api/placeholder/24/24" alt="Math Wallet" className="w-6 h-6" />
+        Open with Math Wallet
+      </Button>
+      
     </div>
   );
 };
