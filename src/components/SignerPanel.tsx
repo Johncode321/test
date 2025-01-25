@@ -141,7 +141,6 @@ const renderWalletButtons = (onConnect) => {
 
       <Button 
         variant="primary"
-        disabled
         className="bg-[#3498db] flex items-center justify-center gap-2 w-full opacity-50 cursor-not-allowed"
       >
         <img src="/api/placeholder/24/24" alt="Trust Wallet" className="w-6 h-6" />
