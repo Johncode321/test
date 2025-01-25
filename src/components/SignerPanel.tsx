@@ -117,7 +117,7 @@ const renderWalletButtons = (onConnect) => {
       <Button 
         variant="primary"
         disabled
-        className="bg-[#2ecc71] flex items-center justify-center gap-2 w-full opacity-50 cursor-not-allowed"
+        className="bg-[#113355] flex items-center justify-center gap-2 w-full opacity-50 cursor-not-allowed"
       >
         <img src="/api/placeholder/24/24" alt="Atomic" className="w-6 h-6" />
         Open with Atomic
