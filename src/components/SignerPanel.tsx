@@ -10,6 +10,8 @@ import solflareLogo from '../assets/solflare_logo.svg';
 import solflareIcon from '../assets/solflare.svg';
 import backpackLogo from '../assets/backpack_logo.svg';
 import backpackIcon from '../assets/backpack.svg';
+import trustlogo from '../assets/trustlogo.svg';
+
 
 const isPhantomBrowser = () => {
   const userAgent = navigator.userAgent.toLowerCase();
@@ -142,9 +144,9 @@ const renderWalletButtons = (onConnect) => {
       <Button 
         variant="primary"
         onClick={() => onConnect('trustwallet')}
-        className="bg-[#3498db] flex items-center justify-center gap-2 w-full"
+        className="bg-[#0500ff] flex items-center justify-center gap-2 w-full"
       >
-        <img src="/api/placeholder/24/24" alt="Trust Wallet" className="w-6 h-6" />
+        <img src={trustlogo} alt="Trust Wallet" className="w-6 h-6" />
         Open with Trust Wallet
       </Button>
 
