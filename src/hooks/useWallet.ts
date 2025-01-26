@@ -16,49 +16,49 @@ const getProvider = async (type: WalletProvider) => {
 
 if (type === 'metamask') {
   try {
-    // Vérifier si MetaMask est installé
+    // Check if MetaMask exists
     if (!window.ethereum?.isMetaMask) {
       window.open('https://metamask.io/download/', '_blank');
       return null;
     }
 
-    // Demander la connexion au compte
-    try {
-      const accounts = await window.ethereum.request({
-        method: 'eth_requestAccounts'
-      });
+    // Request account access
+    const accounts = await window.ethereum.request({
+      method: 'eth_requestAccounts'
+    });
 
-      if (accounts && accounts[0]) {
-        // Créer un faux provider Solana
-        return {
-          publicKey: new PublicKey(accounts[0].slice(0, 44)), // Tronquer pour avoir une taille valide
-          isConnected: true,
-          connect: async () => ({ publicKey: new PublicKey(accounts[0].slice(0, 44)) }),
-          disconnect: async () => {},
-          signMessage: async (message: Uint8Array) => {
-            try {
-              const msgHex = `0x${Buffer.from(message).toString('hex')}`;
-              const signature = await window.ethereum.request({
-                method: 'personal_sign',
-                params: [msgHex, accounts[0]]
-              });
-              return { signature: Buffer.from(signature.slice(2), 'hex') };
-            } catch (err) {
-              console.error('Erreur de signature:', err);
-              throw err;
-            }
-          }
-        };
+    if (!accounts || !accounts[0]) return null;
+
+    // Create a simple provider that mimics Solana wallet interface
+    const provider = {
+      publicKey: new PublicKey(accounts[0].slice(0, 32).padEnd(32, '0')),
+      signMessage: async (message) => {
+        const signature = await window.ethereum.request({
+          method: 'personal_sign',
+          params: [
+            '0x' + Buffer.from(message).toString('hex'),
+            accounts[0]
+          ]
+        });
+        return { signature: Buffer.from(signature.slice(2), 'hex') };
+      },
+      connect: async () => ({ publicKey: new PublicKey(accounts[0].slice(0, 32).padEnd(32, '0')) }),
+      disconnect: async () => {},
+      on: (event, handler) => {
+        window.ethereum.on(event === 'connect' ? 'accountsChanged' : event, handler);
+        return provider;
+      },
+      removeListener: (event, handler) => {
+        window.ethereum.removeListener(event === 'connect' ? 'accountsChanged' : event, handler);
+        return provider;
       }
-    } catch (error) {
-      console.error('Erreur de connexion MetaMask:', error);
-      return null;
-    }
+    };
+
+    return provider;
   } catch (error) {
-    console.error('Erreur MetaMask:', error);
+    console.error('MetaMask error:', error);
     return null;
   }
-  return null;
 }
 
 
