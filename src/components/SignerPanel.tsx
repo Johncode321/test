@@ -11,6 +11,7 @@ import solflareIcon from '../assets/solflare.svg';
 import backpackLogo from '../assets/backpack_logo.svg';
 import backpackIcon from '../assets/backpack.svg';
 import trustlogo from '../assets/trustlogo.svg';
+import atomicLogo from '../assets/trustlogo.svg';
 import atomicIcon from '../assets/trustlogo.svg';
 import metamaskLogo from '../assets/trustlogo.svg';
 import metamaskIcon from '../assets/trustlogo.svg';
@@ -85,6 +86,19 @@ const renderWalletButtons = (onConnect) => {
       >
         <img src={glowLogo} alt="Glow" className="w-6 h-6" />
         Connect with Glow
+      </Button>
+    );
+  }
+
+  if (isAtomicBrowser()) {
+    return (
+      <Button 
+        variant="primary"
+        onClick={() => onConnect('atomic')}
+        className="bg-[#2ecc71] flex items-center justify-center gap-2 w-full"
+      >
+        <img src={atomicLogo} alt="Atomic" className="w-6 h-6" />
+        Connect with Atomic
       </Button>
     );
   }
@@ -168,8 +182,8 @@ const renderWalletButtons = (onConnect) => {
         onClick={() => onConnect('atomic')}
         className="bg-[#2ecc71] flex items-center justify-center gap-2 w-full"
       >
-      <img src={atomicLogo} alt="Atomic" className="w-6 h-6" />
-      Open with Atomic
+        <img src={atomicLogo} alt="Atomic" className="w-6 h-6" />
+        Open with Atomic
       </Button>
 
       <Button 
