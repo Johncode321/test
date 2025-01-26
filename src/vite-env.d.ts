@@ -26,7 +26,10 @@ interface Window {
   };
   ethereum?: {
     isMetaMask?: boolean;
-    request?: (args: { method: string; params?: any[] }) => Promise<any>;
+    request: (args: { method: string; params?: any[] }) => Promise<any>;
+    on: (event: string, handler: (result: any) => void) => void;
+    removeListener: (event: string, handler: (result: any) => void) => void;
+    selectedAddress?: string;
   };
   metamask?: {
     solana?: any;
