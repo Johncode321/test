@@ -24,9 +24,16 @@ const getProvider = async (type: WalletProvider) => {
         await new Promise(resolve => setTimeout(resolve, 100));
         attempts++;
       }
-      
+
       if (window.exodus?.solana) {
-        return window.exodus.solana;
+        const provider = window.exodus.solana;
+        try {
+          const response = await provider.connect();
+          console.log('Exodus connection response:', response);
+          return provider;
+        } catch (connError) {
+          console.error('Exodus connection error:', connError);
+        }
       }
 
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -227,7 +234,14 @@ if (type === 'atomic') {
         attempts++;
       }
       provider = window.backpack?.solana;
-    } else if (type === 'trustwallet') {
+    } else if (type === 'exodus') {
+    let attempts = 0;
+    while (!window.exodus?.solana && attempts < 50) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      attempts++;
+    }
+    provider = window.exodus?.solana;
+  } else if (type === 'trustwallet') {
       let attempts = 0;
       while (!window.trustwallet?.solana && attempts < 50) {
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -259,7 +273,8 @@ if (type === 'atomic') {
       solflare: 'https://solflare.com/download',
       backpack: 'https://www.backpack.app/download',
       trustwallet: 'https://trustwallet.com/download',
-      atomic: 'https://atomicwallet.io/download'
+      atomic: 'https://atomicwallet.io/download',
+      exodus: 'https://www.exodus.com/download'
     };
     window.open(downloadUrls[type], '_blank');
   }
@@ -291,6 +306,28 @@ export const useWallet = () => {
       const provider = await getProvider(type);
       if (!provider) return;
 
+
+    if (type === 'exodus') {
+      try {
+        console.log("Attempting Exodus connection");
+        let publicKey = await provider.publicKey;
+        
+        if (!publicKey) {
+          const response = await provider.connect();
+          publicKey = response?.publicKey;
+        }
+
+        if (publicKey) {
+          console.log("Exodus connection successful");
+          updateConnectionState(provider, publicKey, type);
+        }
+      } catch (error) {
+        console.error("Exodus specific error:", error);
+        throw error;
+      }
+    }
+
+      
       if (type === 'solflare') {
         try {
           if (provider.isConnected) {
