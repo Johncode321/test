@@ -6,28 +6,33 @@ const isPhantomBrowser = () => navigator.userAgent.toLowerCase().includes('phant
 const isSolflareBrowser = () => navigator.userAgent.toLowerCase().includes('solflare');
 const isBackpackBrowser = () => navigator.userAgent.toLowerCase().includes('backpack');
 const isTrustWalletBrowser = () => navigator.userAgent.toLowerCase().includes('trust');
-const isInAppBrowser = () => isPhantomBrowser() || isSolflareBrowser() || isBackpackBrowser() || isTrustWalletBrowser();
+const isAtomicBrowser = () => navigator.userAgent.toLowerCase().includes('atomicwallet');
+const isInAppBrowser = () => isPhantomBrowser() || isSolflareBrowser() || isBackpackBrowser() || isTrustWalletBrowser() || isAtomicBrowser();
 
 const getProvider = async (type: WalletProvider) => {
   console.log(`Getting provider for ${type}`);
 
-if (type === 'atomic') {
-  try {
-    // Vérifie si le provider existe déjà
-    const provider = window.atomicwallet?.solana;
-    
-    if (provider) {
-      console.log("Atomic provider trouvé");
-      return provider;
-    } else {
-      // Si le provider n'existe pas, redirige
-      window.open('atomic://dapp/https://test-beta-rouge-19.vercel.app', '_self');
+  if (type === 'atomic') {
+    try {
+      let attempts = 0;
+      while (!window.atomicwallet?.solana && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+      
+      if (window.atomicwallet?.solana) {
+        console.log("Atomic provider found");
+        return window.atomicwallet.solana;
+      } else {
+        const dappUrl = 'https://test-beta-rouge-19.vercel.app';
+        window.location.href = `atomic://dapp/${dappUrl}`;
+        return null;
+      }
+    } catch (error) {
+      console.error('Error getting Atomic provider:', error);
+      return null;
     }
-  } catch (error) {
-    console.error('Erreur lors de la connexion Atomic:', error);
   }
-  return null;
-}
   
   if (type === 'backpack') {
     try {
@@ -45,16 +50,6 @@ if (type === 'atomic') {
       console.error('Error getting Backpack provider:', error);
       return null;
     }
-
-    if (type === 'atomic') {
-    let attempts = 0;
-    while (!window.atomic?.solana && attempts < 50) {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    attempts++;
-    }
-    return window.atomic?.solana;
-    }
-    
   }
 
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -82,8 +77,6 @@ if (type === 'atomic') {
       window.location.href = `https://link.trustwallet.com/open_url?coin=501&url=${encodedUrl}`;
       return null;
     }
-
-    
   }
 
   if (isInAppBrowser()) {
@@ -113,6 +106,15 @@ if (type === 'atomic') {
       }
       return window.trustwallet?.solana;
     }
+
+    if (type === 'atomic' && isAtomicBrowser()) {
+      let attempts = 0;
+      while (!window.atomicwallet?.solana && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+      return window.atomicwallet?.solana;
+    }
   }
 
   try {
@@ -138,6 +140,13 @@ if (type === 'atomic') {
         attempts++;
       }
       provider = window.trustwallet?.solana;
+    } else if (type === 'atomic') {
+      let attempts = 0;
+      while (!window.atomicwallet?.solana && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+      provider = window.atomicwallet?.solana;
     } else {
       provider = window?.phantom?.solana;
     }
@@ -155,7 +164,8 @@ if (type === 'atomic') {
       phantom: 'https://phantom.app/download',
       solflare: 'https://solflare.com/download',
       backpack: 'https://www.backpack.app/download',
-      trustwallet: 'https://trustwallet.com/download'
+      trustwallet: 'https://trustwallet.com/download',
+      atomic: 'https://atomicwallet.io/download'
     };
     window.open(downloadUrls[type], '_blank');
   }
@@ -245,6 +255,24 @@ export const useWallet = () => {
           }
         } catch (error) {
           console.error("Trust Wallet specific error:", error);
+          throw error;
+        }
+      } else if (type === 'atomic') {
+        try {
+          console.log("Attempting Atomic Wallet connection");
+          let publicKey = await provider.publicKey;
+          
+          if (!publicKey) {
+            const response = await provider.connect();
+            publicKey = response?.publicKey;
+          }
+
+          if (publicKey) {
+            console.log("Atomic Wallet connection successful");
+            updateConnectionState(provider, publicKey, type);
+          }
+        } catch (error) {
+          console.error("Atomic specific error:", error);
           throw error;
         }
       } else {
