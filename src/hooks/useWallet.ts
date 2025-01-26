@@ -12,8 +12,6 @@ const isInAppBrowser = () => isPhantomBrowser() || isSolflareBrowser() || isBack
 const getProvider = async (type: WalletProvider) => {
   console.log(`Getting provider for ${type}`);
 
-Vérifions comment l'extension Atomic injecte réellement son objet :
-
 
 if (type === 'atomic') {
   try {
@@ -37,9 +35,6 @@ if (type === 'atomic') {
     return null;
   }
 }
-
-
-Ajoutez ce code et envoyez-moi les logs de la console pour voir comment l'extension s'injecte.
   
   if (type === 'backpack') {
     try {
