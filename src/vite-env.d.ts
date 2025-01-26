@@ -24,6 +24,11 @@ interface Window {
   mathwallet?: {
     solana?: any;
   };
+
+  glow?: {
+  solana?: any;
+  };
+  
   ethereum?: {
     isMetaMask?: boolean;
     request: (args: { method: string; params?: any[] }) => Promise<any>;
