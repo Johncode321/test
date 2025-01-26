@@ -17,19 +17,10 @@ const getProvider = async (type: WalletProvider) => {
 
 if (type === 'glow') {
   try {
-    // Vérifie si Glow est déjà disponible
-    const provider = await window.glowSolana?.connect();
-    if (provider) {
-      return provider;
-    }
-
-    // Tente de se connecter via l'extension
-    if (window.glowSolana) {
-      const response = await window.glowSolana.connect();
-      return response;
-    }
-
-    // Si l'extension est installée mais pas initialisée, attendre son chargement
+    // Force l'ouverture via le protocole personnalisé
+    window.location.href = 'glow://dapp/connect';
+    
+    // Attendre que le provider soit disponible
     let attempts = 0;
     while (!window.glowSolana && attempts < 50) {
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -37,14 +28,18 @@ if (type === 'glow') {
     }
 
     if (window.glowSolana) {
-      return window.glowSolana;
+      try {
+        const response = await window.glowSolana.connect();
+        console.log('Glow connection response:', response);
+        return window.glowSolana;
+      } catch (connError) {
+        console.error('Glow connection error:', connError);
+      }
     }
 
-    // Ouvre la page de téléchargement si l'extension n'est pas trouvée
-    window.open('https://chrome.google.com/webstore/detail/glow/jnlpeebkgmopjhhekmhdpkhehhlfffjmp', '_blank');
     return null;
   } catch (error) {
-    console.error('Glow connection error:', error);
+    console.error('Glow provider error:', error);
     return null;
   }
 }
