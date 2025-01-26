@@ -7,11 +7,30 @@ const isSolflareBrowser = () => navigator.userAgent.toLowerCase().includes('solf
 const isBackpackBrowser = () => navigator.userAgent.toLowerCase().includes('backpack');
 const isTrustWalletBrowser = () => navigator.userAgent.toLowerCase().includes('trust');
 const isAtomicBrowser = () => navigator.userAgent.toLowerCase().includes('atomicwallet');
+const isMetaMaskBrowser = () => navigator.userAgent.toLowerCase().includes('metamask');
+
 const isInAppBrowser = () => isPhantomBrowser() || isSolflareBrowser() || isBackpackBrowser() || isTrustWalletBrowser() || isAtomicBrowser();
 
 const getProvider = async (type: WalletProvider) => {
   console.log(`Getting provider for ${type}`);
 
+if (type === 'metamask') {
+  try {
+    let attempts = 0;
+    while (!window.metamask?.solana && attempts < 50) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      attempts++;
+    }
+    if (window.metamask?.solana) {
+      return window.metamask.solana;
+    }
+    window.open('https://metamask.io/download/', '_blank');
+    return null;
+  } catch (error) {
+    console.error('Error getting MetaMask provider:', error);
+    return null;
+  }
+}
 
 if (type === 'atomic') {
   try {
