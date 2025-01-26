@@ -187,7 +187,7 @@ const renderWalletButtons = (onConnect) => {
       <Button 
         variant="primary"
         onClick={() => onConnect('exodus')}
-        className="bg-[#1f2033] flex items-center justify-center gap-2 w-full"
+        className="bg-[#7259d3] flex items-center justify-center gap-2 w-full"
       >
         <img src={exodusLogo} alt="Exodus" className="w-6 h-6" />
         Open with Exodus
