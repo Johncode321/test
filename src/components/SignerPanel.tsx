@@ -18,7 +18,7 @@ import metamaskIcon from '../assets/trustlogo.svg';
 import glowLogo from '../assets/trustlogo.svg';
 import glowIcon from '../assets/trustlogo.svg';
 import exodusLogo from '../assets/trustlogo.svg';
-import exodusIcon from '../assets/trustlogo.svg;
+import exodusIcon from '../assets/trustlogo.svg';
 
 const isPhantomBrowser = () => navigator.userAgent.toLowerCase().includes('phantom');
 const isSolflareBrowser = () => navigator.userAgent.toLowerCase().includes('solflare');
@@ -106,6 +106,19 @@ const renderWalletButtons = (onConnect) => {
     );
   }
 
+  if (isExodusBrowser()) {
+    return (
+      <Button 
+        variant="primary"
+        onClick={() => onConnect('exodus')}
+        className="bg-[#3498db] flex items-center justify-center gap-2 w-full"
+      >
+        <img src={exodusLogo} alt="Exodus" className="w-6 h-6" />
+        Connect with Exodus
+      </Button>
+    );
+  }
+
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   if (isMobile && (isBackpackBrowser() || !!window?.backpack?.solana)) {
     return (
@@ -180,7 +193,7 @@ const renderWalletButtons = (onConnect) => {
         Open with MetaMask
       </Button>
 
-          <Button 
+      <Button 
         variant="primary"
         onClick={() => onConnect('glow')}
         className="bg-[#FF6B6B] flex items-center justify-center gap-2 w-full"
@@ -215,7 +228,6 @@ const renderWalletButtons = (onConnect) => {
         <img src="/api/placeholder/24/24" alt="Math Wallet" className="w-6 h-6" />
         Open with Math Wallet
       </Button>
-
     </div>
   );
 };
@@ -266,7 +278,8 @@ export const SignerPanel = ({
             <h1 className="text-2xl font-bold text-white mb-2">Solana Message Signer</h1>
             <p className="text-gray-400 text-sm">
               {(isPhantomBrowser() || isSolflareBrowser() || isBackpackBrowser() || 
-                isTrustWalletBrowser() || isAtomicBrowser() || isMetaMaskBrowser() || isGlowBrowser())
+                isTrustWalletBrowser() || isAtomicBrowser() || isMetaMaskBrowser() || 
+                isGlowBrowser() || isExodusBrowser())
                 ? "Connect your wallet to sign messages"
                 : "Choose your wallet to sign messages"}
             </p>
@@ -307,6 +320,7 @@ export const SignerPanel = ({
               connection.providerType === 'atomic' ? 'bg-[#2ecc71]' :
               connection.providerType === 'metamask' ? 'bg-[#f6851b]' :
               connection.providerType === 'glow' ? 'bg-[#FF6B6B]' :
+              connection.providerType === 'exodus' ? 'bg-[#3498db]' :
               'bg-[#fc7227]'
             }
           >
