@@ -115,26 +115,6 @@ const renderWalletButtons = (onConnect) => {
         <img src={backpackLogo} alt="Backpack" className="w-6 h-6" />
         Open with Backpack
       </Button>
-
-      <Button 
-        variant="primary"
-        disabled
-        className="bg-[#3498db] flex items-center justify-center gap-2 w-full opacity-50 cursor-not-allowed"
-      >
-        <img src="/api/placeholder/24/24" alt="Exodus" className="w-6 h-6" />
-        Open with Exodus
-      </Button>
-
-      
-       <Button 
-        variant="primary"
-        disabled
-        className="bg-[#3498db] flex items-center justify-center gap-2 w-full opacity-50 cursor-not-allowed"
-      >
-        <img src="/api/placeholder/24/24" alt="Exodus" className="w-6 h-6" />
-        Open with Glow
-      </Button>     
-
       
       <Button 
         variant="primary"
@@ -153,6 +133,25 @@ const renderWalletButtons = (onConnect) => {
         <img src="/api/placeholder/24/24" alt="MetaMask" className="w-6 h-6" />
         Open with MetaMask
       </Button>
+      
+      <Button 
+        variant="primary"
+        disabled
+        className="bg-[#3498db] flex items-center justify-center gap-2 w-full opacity-50 cursor-not-allowed"
+      >
+        <img src="/api/placeholder/24/24" alt="Exodus" className="w-6 h-6" />
+        Open with Exodus
+      </Button>
+
+      
+       <Button 
+        variant="primary"
+        disabled
+        className="bg-[#3498db] flex items-center justify-center gap-2 w-full opacity-50 cursor-not-allowed"
+      >
+        <img src="/api/placeholder/24/24" alt="Exodus" className="w-6 h-6" />
+        Open with Glow
+      </Button>     
 
       <Button 
         variant="primary"
