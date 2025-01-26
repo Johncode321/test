@@ -14,30 +14,28 @@ const getProvider = async (type: WalletProvider) => {
 
 if (type === 'atomic') {
   try {
-    // Check for atomic chrome extension
-    const provider = window?.atomicwallet?.solana;
-    
-    if (provider) {
-      console.log("Atomic provider found");
-      return provider;
+    // Sur desktop, on attend que le provider soit injecté
+    let attempts = 0;
+    const maxAttempts = 50;
+
+    while (!window.atomicwallet && attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      attempts++;
+      console.log(`Tentative ${attempts} de trouver le provider Atomic`);
     }
 
-    const atomicExtensionId = "eccldaafcjkhcbmjoliioedageeccgip";
-    const extensionUrl = `chrome-extension://${atomicExtensionId}/index.html`;
-    
-    // Open Atomic extension if installed
-    fetch(extensionUrl)
-      .then(() => {
-        window.location.href = `chrome-extension://${atomicExtensionId}/index.html`;
-      })
-      .catch(() => {
-        // Extension not found, redirect to download page
-        window.open('https://atomicwallet.io/download', '_blank');
-      });
-    
+    // Si on trouve le provider
+    if (window.atomicwallet) {
+      console.log("Provider Atomic trouvé:", window.atomicwallet);
+      return window.atomicwallet;
+    } else {
+      console.log("Provider Atomic non trouvé après attente");
+      window.open('https://atomicwallet.io/download', '_blank');
+    }
+
     return null;
   } catch (error) {
-    console.error('Error getting Atomic provider:', error);
+    console.error('Erreur avec Atomic:', error);
     return null;
   }
 }
