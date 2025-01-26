@@ -196,7 +196,7 @@ const renderWalletButtons = (onConnect) => {
       <Button 
         variant="primary"
         onClick={() => onConnect('glow')}
-        className="bg-[#FF6B6B] flex items-center justify-center gap-2 w-full"
+        className="bg-[#cc62d5] flex items-center justify-center gap-2 w-full"
       >
         <img src={glowLogo} alt="Glow" className="w-6 h-6" />
         Open with Glow
