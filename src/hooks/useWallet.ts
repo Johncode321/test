@@ -16,35 +16,48 @@ const getProvider = async (type: WalletProvider) => {
 
 if (type === 'metamask') {
   try {
-    // Check if MetaMask is installed
-    if (typeof window.ethereum?.isMetaMask !== 'undefined') {
-      // Request connection to Solana network
-      try {
-        const provider = await window.ethereum.request({
-          method: 'wallet_addEthereumChain',
-          params: [{
-            chainId: '0x65',  // Solana's chain ID
-            chainName: 'Solana Mainnet',
-            nativeCurrency: {
-              name: 'SOL',
-              symbol: 'SOL',
-              decimals: 9
-            },
-            rpcUrls: ['https://api.mainnet-beta.solana.com'],
-            blockExplorerUrls: ['https://explorer.solana.com']
-          }]
-        });
-        
-        return provider;
-      } catch (error) {
-        console.error('Error requesting Solana network:', error);
-        return null;
-      }
-    } else {
-      // MetaMask not installed - open extension install page
-      window.open('https://chrome.google.com/webstore/detail/metamask/nkbihfbeogaeaoehlefnkodbefgpgknn', '_blank');
+    if (!window.ethereum?.isMetaMask) {
+      window.open('https://metamask.io/download/', '_blank');
       return null;
     }
+
+    const provider = window.ethereum;
+    
+    // Request account access
+    await provider.request({ 
+      method: 'eth_requestAccounts'
+    });
+
+    // Get the current account
+    const accounts = await provider.request({
+      method: 'eth_accounts'
+    });
+
+    if (accounts && accounts[0]) {
+      // Create a mock Solana PublicKey from the Ethereum address
+      const publicKey = new PublicKey(accounts[0]);
+      
+      // Create a custom provider object with required methods
+      const customProvider = {
+        publicKey,
+        isConnected: true,
+        connect: async () => ({ publicKey }),
+        disconnect: async () => {},
+        signMessage: async (message: Uint8Array) => {
+          const signature = await provider.request({
+            method: 'personal_sign',
+            params: [
+              `0x${Buffer.from(message).toString('hex')}`,
+              accounts[0]
+            ]
+          });
+          return { signature: Buffer.from(signature.slice(2), 'hex') };
+        }
+      };
+
+      return customProvider;
+    }
+    return null;
   } catch (error) {
     console.error('MetaMask connection error:', error);
     return null;
