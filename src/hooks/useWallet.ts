@@ -12,33 +12,34 @@ const isInAppBrowser = () => isPhantomBrowser() || isSolflareBrowser() || isBack
 const getProvider = async (type: WalletProvider) => {
   console.log(`Getting provider for ${type}`);
 
+Vérifions comment l'extension Atomic injecte réellement son objet :
+
+
 if (type === 'atomic') {
   try {
-    // Sur desktop, on attend que le provider soit injecté
-    let attempts = 0;
-    const maxAttempts = 50;
-
-    while (!window.atomicwallet && attempts < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      attempts++;
-      console.log(`Tentative ${attempts} de trouver le provider Atomic`);
+    console.log('Window properties:', Object.keys(window));
+    // Vérifier tous les objets potentiels d'Atomic
+    console.log('atomic:', window.atomic);
+    console.log('atomicwallet:', window.atomicwallet);
+    console.log('atomicWallet:', window.atomicWallet);
+    
+    // Si vous pouvez me fournir les logs, je pourrai identifier l'objet correct
+    
+    let provider = window.atomic || window.atomicwallet || window.atomicWallet;
+    if (provider) {
+      return provider;
     }
 
-    // Si on trouve le provider
-    if (window.atomicwallet) {
-      console.log("Provider Atomic trouvé:", window.atomicwallet);
-      return window.atomicwallet;
-    } else {
-      console.log("Provider Atomic non trouvé après attente");
-      window.open('https://atomicwallet.io/download', '_blank');
-    }
-
+    window.open('https://atomicwallet.io/download', '_blank');
     return null;
   } catch (error) {
-    console.error('Erreur avec Atomic:', error);
+    console.error('Error:', error);
     return null;
   }
 }
+
+
+Ajoutez ce code et envoyez-moi les logs de la console pour voir comment l'extension s'injecte.
   
   if (type === 'backpack') {
     try {
