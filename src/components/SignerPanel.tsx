@@ -118,15 +118,6 @@ const renderWalletButtons = (onConnect) => {
 
       <Button 
         variant="primary"
-        onClick={() => onConnect('atomic')}
-        className="bg-[#2ecc71] flex items-center justify-center gap-2 w-full"
-      >
-        <img src={atomicIcon} alt="Atomic" className="w-6 h-6" />
-      Open with Atomic
-      </Button>
-
-      <Button 
-        variant="primary"
         disabled
         className="bg-[#3498db] flex items-center justify-center gap-2 w-full opacity-50 cursor-not-allowed"
       >
