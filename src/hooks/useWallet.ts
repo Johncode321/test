@@ -16,52 +16,49 @@ const getProvider = async (type: WalletProvider) => {
 
 if (type === 'metamask') {
   try {
+    // Vérifier si MetaMask est installé
     if (!window.ethereum?.isMetaMask) {
       window.open('https://metamask.io/download/', '_blank');
       return null;
     }
 
-    const provider = window.ethereum;
-    
-    // Request account access
-    await provider.request({ 
-      method: 'eth_requestAccounts'
-    });
+    // Demander la connexion au compte
+    try {
+      const accounts = await window.ethereum.request({
+        method: 'eth_requestAccounts'
+      });
 
-    // Get the current account
-    const accounts = await provider.request({
-      method: 'eth_accounts'
-    });
-
-    if (accounts && accounts[0]) {
-      // Create a mock Solana PublicKey from the Ethereum address
-      const publicKey = new PublicKey(accounts[0]);
-      
-      // Create a custom provider object with required methods
-      const customProvider = {
-        publicKey,
-        isConnected: true,
-        connect: async () => ({ publicKey }),
-        disconnect: async () => {},
-        signMessage: async (message: Uint8Array) => {
-          const signature = await provider.request({
-            method: 'personal_sign',
-            params: [
-              `0x${Buffer.from(message).toString('hex')}`,
-              accounts[0]
-            ]
-          });
-          return { signature: Buffer.from(signature.slice(2), 'hex') };
-        }
-      };
-
-      return customProvider;
+      if (accounts && accounts[0]) {
+        // Créer un faux provider Solana
+        return {
+          publicKey: new PublicKey(accounts[0].slice(0, 44)), // Tronquer pour avoir une taille valide
+          isConnected: true,
+          connect: async () => ({ publicKey: new PublicKey(accounts[0].slice(0, 44)) }),
+          disconnect: async () => {},
+          signMessage: async (message: Uint8Array) => {
+            try {
+              const msgHex = `0x${Buffer.from(message).toString('hex')}`;
+              const signature = await window.ethereum.request({
+                method: 'personal_sign',
+                params: [msgHex, accounts[0]]
+              });
+              return { signature: Buffer.from(signature.slice(2), 'hex') };
+            } catch (err) {
+              console.error('Erreur de signature:', err);
+              throw err;
+            }
+          }
+        };
+      }
+    } catch (error) {
+      console.error('Erreur de connexion MetaMask:', error);
+      return null;
     }
-    return null;
   } catch (error) {
-    console.error('MetaMask connection error:', error);
+    console.error('Erreur MetaMask:', error);
     return null;
   }
+  return null;
 }
 
 
