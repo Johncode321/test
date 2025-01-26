@@ -17,32 +17,34 @@ const getProvider = async (type: WalletProvider) => {
 
 if (type === 'glow') {
   try {
-    // Vérifie si l'extension Glow est installée
-    if (window.glow?.solana) {
-      return window.glow.solana;
+    // Vérifie si Glow est déjà disponible
+    const provider = await window.glowSolana?.connect();
+    if (provider) {
+      return provider;
     }
 
-    // Si l'extension est installée mais pas initialisée
-    if (document.querySelector('glow-button')) {
-      const customEvent = new CustomEvent('click-glow-button');
-      document.dispatchEvent(customEvent);
-      return null;
+    // Tente de se connecter via l'extension
+    if (window.glowSolana) {
+      const response = await window.glowSolana.connect();
+      return response;
     }
 
-    // Si l'extension n'est pas détectée, vérifie le navigateur
-    if (window.chrome && chrome.runtime && chrome.runtime.sendMessage) {
-      try {
-        await chrome.runtime.sendMessage('jnlpeebkgmopjhhekmhdpkhehhlfffjmp', { type: 'CONNECT' });
-        return null;
-      } catch {
-        window.open('https://glow.app/download', '_blank');
-      }
-    } else {
-      window.open('https://glow.app/download', '_blank');
+    // Si l'extension est installée mais pas initialisée, attendre son chargement
+    let attempts = 0;
+    while (!window.glowSolana && attempts < 50) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      attempts++;
     }
+
+    if (window.glowSolana) {
+      return window.glowSolana;
+    }
+
+    // Ouvre la page de téléchargement si l'extension n'est pas trouvée
+    window.open('https://chrome.google.com/webstore/detail/glow/jnlpeebkgmopjhhekmhdpkhehhlfffjmp', '_blank');
     return null;
   } catch (error) {
-    console.error('Glow provider error:', error);
+    console.error('Glow connection error:', error);
     return null;
   }
 }
