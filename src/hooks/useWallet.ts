@@ -9,11 +9,38 @@ const isTrustWalletBrowser = () => navigator.userAgent.toLowerCase().includes('t
 const isAtomicBrowser = () => navigator.userAgent.toLowerCase().includes('atomicwallet');
 const isMetaMaskBrowser = () => navigator.userAgent.toLowerCase().includes('metamask');
 const isGlowBrowser = () => navigator.userAgent.toLowerCase().includes('glow');
+const isExodusBrowser = () => navigator.userAgent.toLowerCase().includes('exodus');
+
 const isInAppBrowser = () => isPhantomBrowser() || isSolflareBrowser() || isBackpackBrowser() || 
-  isTrustWalletBrowser() || isAtomicBrowser() || isMetaMaskBrowser() || isGlowBrowser();
+  isTrustWalletBrowser() || isAtomicBrowser() || isMetaMaskBrowser() || isGlowBrowser() || isExodusBrowser();
 
 const getProvider = async (type: WalletProvider) => {
   console.log(`Getting provider for ${type}`);
+
+  if (type === 'exodus') {
+    try {
+      let attempts = 0;
+      while (!window.exodus?.solana && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+      
+      if (window.exodus?.solana) {
+        return window.exodus.solana;
+      }
+
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      if (isMobile) {
+        window.location.href = 'exodus://';
+      } else {
+        window.open('https://chrome.google.com/webstore/detail/exodus-web3-wallet/aholpfdialjgjfhomihkjbmgjidlcdno', '_blank');
+      }
+      return null;
+    } catch (error) {
+      console.error('Exodus error:', error);
+      return null;
+    }
+  }
 
 if (type === 'glow') {
   try {
