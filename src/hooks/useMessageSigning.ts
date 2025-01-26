@@ -43,6 +43,27 @@ export const useMessageSigning = (connection: WalletConnection) => {
           console.error("Backpack signing error:", error);
           setSignature('');
         }
+      } else if (connection.providerType === 'atomic') {
+        try {
+          const signedData = await connection.provider.signMessage(encodedMessage);
+          console.log("Atomic signature response:", signedData);
+          if (signedData?.signature) {
+            setSignature(encode(signedData.signature));
+          }
+        } catch (error) {
+          console.error("Atomic signing error:", error);
+          setSignature('');
+        }
+      } else if (connection.providerType === 'exodus') {
+        try {
+          const signedData = await connection.provider.signMessage(encodedMessage);
+          console.log("Exodus signature response:", signedData);
+          const signature = signedData?.signature || signedData;
+          setSignature(encode(signature));
+        } catch (error) {
+          console.error("Exodus signing error:", error);
+          setSignature('');
+        }
       } else {
         const signedMessage = await connection.provider.signMessage(encodedMessage, "utf8");
         console.log("Standard wallet signature response:", signedMessage);
