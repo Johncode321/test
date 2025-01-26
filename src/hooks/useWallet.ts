@@ -15,23 +15,48 @@ const getProvider = async (type: WalletProvider) => {
 
 if (type === 'atomic') {
   try {
-    console.log('Window properties:', Object.keys(window));
-    // Vérifier tous les objets potentiels d'Atomic
-    console.log('atomic:', window.atomic);
-    console.log('atomicwallet:', window.atomicwallet);
-    console.log('atomicWallet:', window.atomicWallet);
+    console.log('Checking for Atomic provider...');
     
-    // Si vous pouvez me fournir les logs, je pourrai identifier l'objet correct
-    
-    let provider = window.atomic || window.atomicwallet || window.atomicWallet;
-    if (provider) {
-      return provider;
+    // Check every possible provider name
+    const possibleProviders = [
+      window.atomic,
+      window.atomicwallet,
+      window.atomicWallet,
+      window?.atomic?.solana,
+      window?.atomicwallet?.solana,
+      window?.atomicWallet?.solana,
+      window?.Atomic,
+      window?.AtomicWallet
+    ];
+
+    let provider = null;
+    for (const p of possibleProviders) {
+      if (p) {
+        console.log('Found provider:', p);
+        provider = p;
+        break;
+      }
     }
 
+    if (provider) {
+      if (typeof provider.connect === 'function' && typeof provider.disconnect === 'function') {
+        console.log('Valid Atomic provider found');
+        return provider;
+      }
+      console.log('Found provider but missing required methods');
+    }
+
+    // If we're in an iframe, try to communicate with parent
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: 'ATOMIC_CONNECT' }, '*');
+      return null;
+    }
+
+    console.log('No valid provider found, opening download page');
     window.open('https://atomicwallet.io/download', '_blank');
     return null;
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Atomic provider error:', error);
     return null;
   }
 }
