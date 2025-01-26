@@ -32,19 +32,7 @@ interface SignerPanelProps {
 }
 
 const renderWalletButtons = (onConnect) => {
-  
-  if (isAtomicBrowser()) {
-  return (
-    <Button 
-      variant="primary"
-      onClick={() => onConnect('atomic')}
-      className="bg-[#2ecc71] flex items-center justify-center gap-2 w-full"
-    >
-      <img src={atomicIcon} alt="Atomic" className="w-6 h-6" />
-      Connect with Atomic
-    </Button>
-  );
-  }
+
   
   if (isPhantomBrowser()) {
     return (
