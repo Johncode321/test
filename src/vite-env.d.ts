@@ -1,5 +1,4 @@
 /// <reference types="vite/client" />
-
 declare module '*.svg' {
   const content: string;
   export default content;
@@ -24,6 +23,10 @@ interface Window {
   };
   mathwallet?: {
     solana?: any;
+  };
+  ethereum?: {
+    isMetaMask?: boolean;
+    request?: (args: { method: string; params?: any[] }) => Promise<any>;
   };
   metamask?: {
     solana?: any;
