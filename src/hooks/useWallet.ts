@@ -94,48 +94,32 @@ if (type === 'glow') {
 
 if (type === 'atomic') {
   try {
-    console.log('Checking for Atomic provider...');
-    
-    // Check every possible provider name
-    const possibleProviders = [
-      window.atomic,
-      window.atomicwallet,
-      window.atomicWallet,
-      window?.atomic?.solana,
-      window?.atomicwallet?.solana,
-      window?.atomicWallet?.solana,
-      window?.Atomic,
-      window?.AtomicWallet
-    ];
-
-    let provider = null;
-    for (const p of possibleProviders) {
-      if (p) {
-        console.log('Found provider:', p);
-        provider = p;
-        break;
-      }
+    if (window.atomic?.solana) {
+      return window.atomic.solana;
     }
 
-    if (provider) {
-      if (typeof provider.connect === 'function' && typeof provider.disconnect === 'function') {
-        console.log('Valid Atomic provider found');
-        return provider;
-      }
-      console.log('Found provider but missing required methods');
+    if (window.atomicwallet?.solana) {
+      return window.atomicwallet.solana;
     }
 
-    // If we're in an iframe, try to communicate with parent
-    if (window.parent !== window) {
-      window.parent.postMessage({ type: 'ATOMIC_CONNECT' }, '*');
-      return null;
+    let attempts = 0;
+    while (!window.atomic?.solana && !window.atomicwallet?.solana && attempts < 50) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      attempts++;
     }
 
-    console.log('No valid provider found, opening download page');
-    window.open('https://atomicwallet.io/download', '_blank');
+    if (window.atomic?.solana || window.atomicwallet?.solana) {
+      const provider = window.atomic?.solana || window.atomicwallet?.solana;
+      const response = await provider.connect();
+      return provider;
+    }
+
+    window.location.href = 'atomic://dapp/connect';
     return null;
+
   } catch (error) {
     console.error('Atomic provider error:', error);
+    window.open('https://atomicwallet.io/download', '_blank');
     return null;
   }
 }
