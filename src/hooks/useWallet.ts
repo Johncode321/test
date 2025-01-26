@@ -14,6 +14,30 @@ const getProvider = async (type: WalletProvider) => {
   console.log(`Getting provider for ${type}`);
 
 
+  if (type === 'glow') {
+  try {
+    let attempts = 0;
+    while (!window.glow?.solana && attempts < 50) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      attempts++;
+    }
+    if (window.glow?.solana) {
+      return window.glow.solana;
+    }
+    
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (isMobile) {
+      window.location.href = `https://glow.app/download`;
+    } else {
+      window.open('https://glow.app/download', '_blank');
+    }
+    return null;
+  } catch (error) {
+    console.error('Error getting Glow provider:', error);
+    return null;
+  }
+}
+
 if (type === 'metamask') {
   try {
     // Check if MetaMask exists
