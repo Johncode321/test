@@ -293,7 +293,7 @@ export const SignerPanel = ({
               connection.providerType === 'trustwallet' ? 'bg-[#0500ff]' :
               connection.providerType === 'atomic' ? 'bg-[#2ecc71]' :
               connection.providerType === 'metamask' ? 'bg-[#f6851b]' :
-              connection.providerType === 'glow' ? 'bg-[#FF6B6B]' :
+              connection.providerType === 'glow' ? 'bg-[#dfb726]' :
               connection.providerType === 'exodus' ? 'bg-[#3498db]' :
               'bg-[#fc7227]'
             }
