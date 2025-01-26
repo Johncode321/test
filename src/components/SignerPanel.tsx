@@ -177,11 +177,11 @@ const renderWalletButtons = (onConnect) => {
       
       <Button 
         variant="primary"
-        onClick={() => onConnect('trustwallet')}
-        className="bg-[#0500ff] flex items-center justify-center gap-2 w-full"
+        onClick={() => onConnect('glow')}
+        className="bg-[#cc62d5] flex items-center justify-center gap-2 w-full"
       >
-        <img src={trustlogo} alt="Trust Wallet" className="w-6 h-6" />
-        Open with Trust Wallet
+        <img src={glowLogo} alt="Glow" className="w-6 h-6" />
+        Open with Glow
       </Button>
       
       <Button 
@@ -195,11 +195,11 @@ const renderWalletButtons = (onConnect) => {
       
       <Button 
         variant="primary"
-        onClick={() => onConnect('glow')}
-        className="bg-[#cc62d5] flex items-center justify-center gap-2 w-full"
+        onClick={() => onConnect('trustwallet')}
+        className="bg-[#0500ff] flex items-center justify-center gap-2 w-full"
       >
-        <img src={glowLogo} alt="Glow" className="w-6 h-6" />
-        Open with Glow
+        <img src={trustlogo} alt="Trust Wallet" className="w-6 h-6" />
+        Open with Trust Wallet
       </Button>
 
     </div>
