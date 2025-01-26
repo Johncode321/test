@@ -12,28 +12,28 @@ import backpackLogo from '../assets/backpack_logo.svg';
 import backpackIcon from '../assets/backpack.svg';
 import trustlogo from '../assets/trustlogo.svg';
 import atomicIcon from '../assets/trustlogo.svg';
+import metamaskLogo from '../assets/metamask_logo.svg';
+import metamaskIcon from '../assets/metamask.svg';
 
 const isPhantomBrowser = () => navigator.userAgent.toLowerCase().includes('phantom');
 const isSolflareBrowser = () => navigator.userAgent.toLowerCase().includes('solflare');
 const isBackpackBrowser = () => navigator.userAgent.toLowerCase().includes('backpack');
 const isTrustWalletBrowser = () => navigator.userAgent.toLowerCase().includes('trustwallet');
 const isAtomicBrowser = () => navigator.userAgent.toLowerCase().includes('atomicwallet');
-
+const isMetaMaskBrowser = () => navigator.userAgent.toLowerCase().includes('metamask');
 
 interface SignerPanelProps {
   connection: WalletConnection;
   message: string;
   signature: string;
   onMessageChange: (message: string) => void;
-  onConnect: (type: 'phantom' | 'solflare' | 'backpack' | 'trustwallet' | 'atomic') => void;
+  onConnect: (type: 'phantom' | 'solflare' | 'backpack' | 'trustwallet' | 'atomic' | 'metamask') => void;
   onDisconnect: () => void;
   onSign: () => void;
   onCopySignature: () => void;
 }
 
 const renderWalletButtons = (onConnect) => {
-
-  
   if (isPhantomBrowser()) {
     return (
       <Button 
@@ -56,6 +56,19 @@ const renderWalletButtons = (onConnect) => {
       >
         <img src={solflareLogo} alt="Solflare" className="w-6 h-6" />
         Connect with Solflare
+      </Button>
+    );
+  }
+
+  if (isMetaMaskBrowser()) {
+    return (
+      <Button 
+        variant="primary"
+        onClick={() => onConnect('metamask')}
+        className="bg-[#f6851b] flex items-center justify-center gap-2 w-full"
+      >
+        <img src={metamaskLogo} alt="MetaMask" className="w-6 h-6" />
+        Connect with MetaMask
       </Button>
     );
   }
@@ -127,10 +140,10 @@ const renderWalletButtons = (onConnect) => {
 
       <Button 
         variant="primary"
-        disabled
-        className="bg-[#f39c12] flex items-center justify-center gap-2 w-full opacity-50 cursor-not-allowed"
+        onClick={() => onConnect('metamask')}
+        className="bg-[#f6851b] flex items-center justify-center gap-2 w-full"
       >
-        <img src="/api/placeholder/24/24" alt="MetaMask" className="w-6 h-6" />
+        <img src={metamaskLogo} alt="MetaMask" className="w-6 h-6" />
         Open with MetaMask
       </Button>
       
@@ -143,13 +156,12 @@ const renderWalletButtons = (onConnect) => {
         Open with Exodus
       </Button>
 
-      
-       <Button 
+      <Button 
         variant="primary"
         disabled
         className="bg-[#3498db] flex items-center justify-center gap-2 w-full opacity-50 cursor-not-allowed"
       >
-        <img src="/api/placeholder/24/24" alt="Exodus" className="w-6 h-6" />
+        <img src="/api/placeholder/24/24" alt="Glow" className="w-6 h-6" />
         Open with Glow
       </Button>     
 
@@ -161,7 +173,6 @@ const renderWalletButtons = (onConnect) => {
         <img src="/api/placeholder/24/24" alt="Math Wallet" className="w-6 h-6" />
         Open with Math Wallet
       </Button>
-      
     </div>
   );
 };
@@ -189,7 +200,9 @@ export const SignerPanel = ({
       case 'trustwallet':
         return trustlogo;
       case 'atomic':
-      return atomicIcon;
+        return atomicIcon;
+      case 'metamask':
+        return metamaskIcon;
       default:
         return phantomIcon;
     }
@@ -205,7 +218,8 @@ export const SignerPanel = ({
             </div>
             <h1 className="text-2xl font-bold text-white mb-2">Solana Message Signer</h1>
             <p className="text-gray-400 text-sm">
-            {(isPhantomBrowser() || isSolflareBrowser() || isBackpackBrowser() || isTrustWalletBrowser() || isAtomicBrowser())
+              {(isPhantomBrowser() || isSolflareBrowser() || isBackpackBrowser() || 
+                isTrustWalletBrowser() || isAtomicBrowser() || isMetaMaskBrowser())
                 ? "Connect your wallet to sign messages"
                 : "Choose your wallet to sign messages"}
             </p>
@@ -244,6 +258,7 @@ export const SignerPanel = ({
               connection.providerType === 'backpack' ? 'bg-[#e33e3f]' :
               connection.providerType === 'trustwallet' ? 'bg-[#0500ff]' :
               connection.providerType === 'atomic' ? 'bg-[#2ecc71]' :
+              connection.providerType === 'metamask' ? 'bg-[#f6851b]' :
               'bg-[#fc7227]'
             }
           >
