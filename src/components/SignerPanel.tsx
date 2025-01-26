@@ -12,10 +12,10 @@ import backpackLogo from '../assets/backpack_logo.svg';
 import backpackIcon from '../assets/backpack.svg';
 import trustlogo from '../assets/trustlogo.svg';
 import atomicIcon from '../assets/trustlogo.svg';
-import metamaskLogo from '../assets/metamask_logo.svg';
-import metamaskIcon from '../assets/metamask.svg';
-import glowLogo from '../assets/glow_logo.svg';
-import glowIcon from '../assets/glow.svg';
+import metamaskLogo from '../assets/trustlogo.svg';
+import metamaskIcon from '../assets/trustlogo.svg';
+import glowLogo from '../assets/trustlogo.svg';
+import glowIcon from '../assets/trustlogo.svg';
 
 const isPhantomBrowser = () => navigator.userAgent.toLowerCase().includes('phantom');
 const isSolflareBrowser = () => navigator.userAgent.toLowerCase().includes('solflare');
