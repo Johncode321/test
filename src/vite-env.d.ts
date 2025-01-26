@@ -12,9 +12,6 @@ interface Window {
   backpack?: {
     solana?: any;
   };
-  exodus?: {
-    solana?: any;
-  };
   trustwallet?: {
     solana?: any;
   };
@@ -26,6 +23,10 @@ interface Window {
   };
 
   glow?: {
+  solana?: any;
+  };
+
+  exodus?: {
   solana?: any;
   };
   
