@@ -95,51 +95,29 @@ if (type === 'glow') {
 if (type === 'atomic') {
   try {
     let attempts = 0;
-    let provider = null;
-
-    while (!provider && attempts < 50) {
-      provider = window.atomic?.solana || window.atomicwallet?.solana;
-      if (!provider) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        attempts++;
-      }
+    // Attendre que l'extension soit chargée
+    while (!window.atomicwallet?.solana && attempts < 50) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      attempts++;
     }
 
-    if (provider) {
-      const connectedProvider = await provider.connect();
-      return connectedProvider || provider;
+    if (window.atomicwallet?.solana) {
+      return window.atomicwallet.solana;
     }
 
-    if (!window.atomic) {
-      const protocolCheck = "atomic:" + window.location.href;
-      window.location.href = protocolCheck;
-      return null;
+    // Si l'extension n'est pas installée, ouvrir la page de téléchargement
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (isMobile) {
+      window.location.href = 'atomic://dapp/connect';
+    } else {
+      window.open('https://chrome.google.com/webstore/detail/atomic-wallet/jlhafgmhgcbklklkondkkmekibjkfmig', '_blank');
     }
-
-    window.open('https://atomicwallet.io/download', '_blank');
     return null;
   } catch (error) {
-    console.error('Atomic error:', error);
+    console.error('Atomic connection error:', error);
     return null;
   }
 }
-  if (type === 'backpack') {
-    try {
-      let attempts = 0;
-      while (!window.backpack?.solana && attempts < 50) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        attempts++;
-      }
-      if (window.backpack?.solana) {
-        return window.backpack.solana;
-      }
-      window.open('https://www.backpack.app/download', '_blank');
-      return null;
-    } catch (error) {
-      console.error('Error getting Backpack provider:', error);
-      return null;
-    }
-  }
 
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   const isStandaloneBrowser = !isInAppBrowser();
