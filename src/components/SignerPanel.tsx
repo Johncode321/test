@@ -12,8 +12,10 @@ import backpackLogo from '../assets/backpack_logo.svg';
 import backpackIcon from '../assets/backpack.svg';
 import trustlogo from '../assets/trustlogo.svg';
 import atomicIcon from '../assets/trustlogo.svg';
-import metamaskLogo from '../assets/trustlogo.svg';
-import metamaskIcon from '../assets/trustlogo.svg';
+import metamaskLogo from '../assets/metamask_logo.svg';
+import metamaskIcon from '../assets/metamask.svg';
+import glowLogo from '../assets/glow_logo.svg';
+import glowIcon from '../assets/glow.svg';
 
 const isPhantomBrowser = () => navigator.userAgent.toLowerCase().includes('phantom');
 const isSolflareBrowser = () => navigator.userAgent.toLowerCase().includes('solflare');
@@ -21,13 +23,14 @@ const isBackpackBrowser = () => navigator.userAgent.toLowerCase().includes('back
 const isTrustWalletBrowser = () => navigator.userAgent.toLowerCase().includes('trustwallet');
 const isAtomicBrowser = () => navigator.userAgent.toLowerCase().includes('atomicwallet');
 const isMetaMaskBrowser = () => navigator.userAgent.toLowerCase().includes('metamask');
+const isGlowBrowser = () => navigator.userAgent.toLowerCase().includes('glow');
 
 interface SignerPanelProps {
   connection: WalletConnection;
   message: string;
   signature: string;
   onMessageChange: (message: string) => void;
-  onConnect: (type: 'phantom' | 'solflare' | 'backpack' | 'trustwallet' | 'atomic' | 'metamask') => void;
+  onConnect: (type: 'phantom' | 'solflare' | 'backpack' | 'trustwallet' | 'atomic' | 'metamask' | 'glow') => void;
   onDisconnect: () => void;
   onSign: () => void;
   onCopySignature: () => void;
@@ -69,6 +72,19 @@ const renderWalletButtons = (onConnect) => {
       >
         <img src={metamaskLogo} alt="MetaMask" className="w-6 h-6" />
         Connect with MetaMask
+      </Button>
+    );
+  }
+
+  if (isGlowBrowser()) {
+    return (
+      <Button 
+        variant="primary"
+        onClick={() => onConnect('glow')}
+        className="bg-[#FF6B6B] flex items-center justify-center gap-2 w-full"
+      >
+        <img src={glowLogo} alt="Glow" className="w-6 h-6" />
+        Connect with Glow
       </Button>
     );
   }
@@ -146,6 +162,15 @@ const renderWalletButtons = (onConnect) => {
         <img src={metamaskLogo} alt="MetaMask" className="w-6 h-6" />
         Open with MetaMask
       </Button>
+
+      <Button 
+        variant="primary"
+        onClick={() => onConnect('glow')}
+        className="bg-[#FF6B6B] flex items-center justify-center gap-2 w-full"
+      >
+        <img src={glowLogo} alt="Glow" className="w-6 h-6" />
+        Open with Glow
+      </Button>
       
       <Button 
         variant="primary"
@@ -155,15 +180,6 @@ const renderWalletButtons = (onConnect) => {
         <img src="/api/placeholder/24/24" alt="Exodus" className="w-6 h-6" />
         Open with Exodus
       </Button>
-
-      <Button 
-        variant="primary"
-        disabled
-        className="bg-[#3498db] flex items-center justify-center gap-2 w-full opacity-50 cursor-not-allowed"
-      >
-        <img src="/api/placeholder/24/24" alt="Glow" className="w-6 h-6" />
-        Open with Glow
-      </Button>     
 
       <Button 
         variant="primary"
@@ -203,6 +219,8 @@ export const SignerPanel = ({
         return atomicIcon;
       case 'metamask':
         return metamaskIcon;
+      case 'glow':
+        return glowIcon;
       default:
         return phantomIcon;
     }
@@ -219,7 +237,7 @@ export const SignerPanel = ({
             <h1 className="text-2xl font-bold text-white mb-2">Solana Message Signer</h1>
             <p className="text-gray-400 text-sm">
               {(isPhantomBrowser() || isSolflareBrowser() || isBackpackBrowser() || 
-                isTrustWalletBrowser() || isAtomicBrowser() || isMetaMaskBrowser())
+                isTrustWalletBrowser() || isAtomicBrowser() || isMetaMaskBrowser() || isGlowBrowser())
                 ? "Connect your wallet to sign messages"
                 : "Choose your wallet to sign messages"}
             </p>
@@ -259,6 +277,7 @@ export const SignerPanel = ({
               connection.providerType === 'trustwallet' ? 'bg-[#0500ff]' :
               connection.providerType === 'atomic' ? 'bg-[#2ecc71]' :
               connection.providerType === 'metamask' ? 'bg-[#f6851b]' :
+              connection.providerType === 'glow' ? 'bg-[#FF6B6B]' :
               'bg-[#fc7227]'
             }
           >
