@@ -13,46 +13,43 @@ const isInAppBrowser = () => isPhantomBrowser() || isSolflareBrowser() || isBack
 const getProvider = async (type: WalletProvider) => {
   console.log(`Getting provider for ${type}`);
 
-  if (type === 'metamask') {
-    try {
-      const hasProvider = !!window.ethereum?.isMetaMask;
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      
-      if (!hasProvider) {
-        if (isMobile) {
-          window.location.href = `https://metamask.app.link/dapp/${window.location.host}`;
-          return null;
-        } else {
-          window.open('https://metamask.io/download/', '_blank');
-          return null;
-        }
-      }
 
-      let provider = window.ethereum;
-      
+if (type === 'metamask') {
+  try {
+    // Check if MetaMask is installed
+    if (typeof window.ethereum?.isMetaMask !== 'undefined') {
+      // Request connection to Solana network
       try {
-        await provider.request({
-          method: 'wallet_requestPermissions',
+        const provider = await window.ethereum.request({
+          method: 'wallet_addEthereumChain',
           params: [{
-            solana: {}
+            chainId: '0x65',  // Solana's chain ID
+            chainName: 'Solana Mainnet',
+            nativeCurrency: {
+              name: 'SOL',
+              symbol: 'SOL',
+              decimals: 9
+            },
+            rpcUrls: ['https://api.mainnet-beta.solana.com'],
+            blockExplorerUrls: ['https://explorer.solana.com']
           }]
-        });
-        
-        provider = await provider.request({
-          method: 'wallet_getProviderState',
-          params: ['solana']
         });
         
         return provider;
       } catch (error) {
-        console.error('Error getting MetaMask Solana provider:', error);
+        console.error('Error requesting Solana network:', error);
         return null;
       }
-    } catch (error) {
-      console.error('MetaMask connection error:', error);
+    } else {
+      // MetaMask not installed - open extension install page
+      window.open('https://chrome.google.com/webstore/detail/metamask/nkbihfbeogaeaoehlefnkodbefgpgknn', '_blank');
       return null;
     }
+  } catch (error) {
+    console.error('MetaMask connection error:', error);
+    return null;
   }
+}
 
 
 if (type === 'atomic') {
