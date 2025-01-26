@@ -65,4 +65,12 @@ export const WALLET_CONFIGS: WalletConfig[] = [
     connectionUrl: 'https://metamask.app.link/connect',
     downloadUrl: 'https://metamask.io/download/'
   }
+  {
+  id: 'glow',
+  name: 'Glow',
+  logo: '/assets/glow_logo.svg',
+  bgColor: 'bg-[#FF6B6B]',
+  connectionUrl: 'https://glow.app/connect',
+  downloadUrl: 'https://glow.app/download'
+  }
 ];
