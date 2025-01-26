@@ -12,27 +12,35 @@ const isInAppBrowser = () => isPhantomBrowser() || isSolflareBrowser() || isBack
 const getProvider = async (type: WalletProvider) => {
   console.log(`Getting provider for ${type}`);
 
-  if (type === 'atomic') {
-    try {
-      let attempts = 0;
-      while (!window.atomicwallet?.solana && attempts < 50) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        attempts++;
-      }
-      
-      if (window.atomicwallet?.solana) {
-        console.log("Atomic provider found");
-        return window.atomicwallet.solana;
-      } else {
-        const dappUrl = 'https://test-beta-rouge-19.vercel.app';
-        window.location.href = `atomic://dapp/${dappUrl}`;
-        return null;
-      }
-    } catch (error) {
-      console.error('Error getting Atomic provider:', error);
-      return null;
+if (type === 'atomic') {
+  try {
+    // Check for atomic chrome extension
+    const provider = window?.atomicwallet?.solana;
+    
+    if (provider) {
+      console.log("Atomic provider found");
+      return provider;
     }
+
+    const atomicExtensionId = "eccldaafcjkhcbmjoliioedageeccgip";
+    const extensionUrl = `chrome-extension://${atomicExtensionId}/index.html`;
+    
+    // Open Atomic extension if installed
+    fetch(extensionUrl)
+      .then(() => {
+        window.location.href = `chrome-extension://${atomicExtensionId}/index.html`;
+      })
+      .catch(() => {
+        // Extension not found, redirect to download page
+        window.open('https://atomicwallet.io/download', '_blank');
+      });
+    
+    return null;
+  } catch (error) {
+    console.error('Error getting Atomic provider:', error);
+    return null;
   }
+}
   
   if (type === 'backpack') {
     try {
