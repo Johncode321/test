@@ -17,6 +17,8 @@ import metamaskLogo from '../assets/trustlogo.svg';
 import metamaskIcon from '../assets/trustlogo.svg';
 import glowLogo from '../assets/trustlogo.svg';
 import glowIcon from '../assets/trustlogo.svg';
+import exodusLogo from '../assets/trustlogo.svg';
+import exodusIcon from '../assets/trustlogo.svg;
 
 const isPhantomBrowser = () => navigator.userAgent.toLowerCase().includes('phantom');
 const isSolflareBrowser = () => navigator.userAgent.toLowerCase().includes('solflare');
@@ -25,13 +27,14 @@ const isTrustWalletBrowser = () => navigator.userAgent.toLowerCase().includes('t
 const isAtomicBrowser = () => navigator.userAgent.toLowerCase().includes('atomicwallet');
 const isMetaMaskBrowser = () => navigator.userAgent.toLowerCase().includes('metamask');
 const isGlowBrowser = () => navigator.userAgent.toLowerCase().includes('glow');
+const isExodusBrowser = () => navigator.userAgent.toLowerCase().includes('exodus');
 
 interface SignerPanelProps {
   connection: WalletConnection;
   message: string;
   signature: string;
   onMessageChange: (message: string) => void;
-  onConnect: (type: 'phantom' | 'solflare' | 'backpack' | 'trustwallet' | 'atomic' | 'metamask' | 'glow') => void;
+  onConnect: (type: 'phantom' | 'solflare' | 'backpack' | 'trustwallet' | 'atomic' | 'metamask' | 'glow' | 'exodus') => void;
   onDisconnect: () => void;
   onSign: () => void;
   onCopySignature: () => void;
@@ -177,6 +180,15 @@ const renderWalletButtons = (onConnect) => {
         Open with MetaMask
       </Button>
 
+          <Button 
+        variant="primary"
+        onClick={() => onConnect('glow')}
+        className="bg-[#FF6B6B] flex items-center justify-center gap-2 w-full"
+      >
+        <img src={glowLogo} alt="Glow" className="w-6 h-6" />
+        Open with Glow
+      </Button>
+
       <Button 
         variant="primary"
         onClick={() => onConnect('atomic')}
@@ -188,19 +200,10 @@ const renderWalletButtons = (onConnect) => {
 
       <Button 
         variant="primary"
-        onClick={() => onConnect('glow')}
-        className="bg-[#FF6B6B] flex items-center justify-center gap-2 w-full"
+        onClick={() => onConnect('exodus')}
+        className="bg-[#3498db] flex items-center justify-center gap-2 w-full"
       >
-        <img src={glowLogo} alt="Glow" className="w-6 h-6" />
-        Open with Glow
-      </Button>
-      
-      <Button 
-        variant="primary"
-        disabled
-        className="bg-[#3498db] flex items-center justify-center gap-2 w-full opacity-50 cursor-not-allowed"
-      >
-        <img src="/api/placeholder/24/24" alt="Exodus" className="w-6 h-6" />
+        <img src={exodusLogo} alt="Exodus" className="w-6 h-6" />
         Open with Exodus
       </Button>
 
@@ -212,6 +215,7 @@ const renderWalletButtons = (onConnect) => {
         <img src="/api/placeholder/24/24" alt="Math Wallet" className="w-6 h-6" />
         Open with Math Wallet
       </Button>
+
     </div>
   );
 };
@@ -244,6 +248,8 @@ export const SignerPanel = ({
         return metamaskIcon;
       case 'glow':
         return glowIcon;
+      case 'exodus':
+        return exodusIcon;
       default:
         return phantomIcon;
     }
