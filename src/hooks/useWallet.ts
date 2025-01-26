@@ -8,29 +8,52 @@ const isBackpackBrowser = () => navigator.userAgent.toLowerCase().includes('back
 const isTrustWalletBrowser = () => navigator.userAgent.toLowerCase().includes('trust');
 const isAtomicBrowser = () => navigator.userAgent.toLowerCase().includes('atomicwallet');
 const isMetaMaskBrowser = () => navigator.userAgent.toLowerCase().includes('metamask');
-
-const isInAppBrowser = () => isPhantomBrowser() || isSolflareBrowser() || isBackpackBrowser() || isTrustWalletBrowser() || isAtomicBrowser();
+const isInAppBrowser = () => isPhantomBrowser() || isSolflareBrowser() || isBackpackBrowser() || isTrustWalletBrowser() || isAtomicBrowser() || isMetaMaskBrowser();
 
 const getProvider = async (type: WalletProvider) => {
   console.log(`Getting provider for ${type}`);
 
-if (type === 'metamask') {
-  try {
-    let attempts = 0;
-    while (!window.metamask?.solana && attempts < 50) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      attempts++;
+  if (type === 'metamask') {
+    try {
+      const hasProvider = !!window.ethereum?.isMetaMask;
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
+      if (!hasProvider) {
+        if (isMobile) {
+          window.location.href = `https://metamask.app.link/dapp/${window.location.host}`;
+          return null;
+        } else {
+          window.open('https://metamask.io/download/', '_blank');
+          return null;
+        }
+      }
+
+      let provider = window.ethereum;
+      
+      try {
+        await provider.request({
+          method: 'wallet_requestPermissions',
+          params: [{
+            solana: {}
+          }]
+        });
+        
+        provider = await provider.request({
+          method: 'wallet_getProviderState',
+          params: ['solana']
+        });
+        
+        return provider;
+      } catch (error) {
+        console.error('Error getting MetaMask Solana provider:', error);
+        return null;
+      }
+    } catch (error) {
+      console.error('MetaMask connection error:', error);
+      return null;
     }
-    if (window.metamask?.solana) {
-      return window.metamask.solana;
-    }
-    window.open('https://metamask.io/download/', '_blank');
-    return null;
-  } catch (error) {
-    console.error('Error getting MetaMask provider:', error);
-    return null;
   }
-}
+
 
 if (type === 'atomic') {
   try {
