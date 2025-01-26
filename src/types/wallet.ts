@@ -1,6 +1,6 @@
 import { PublicKey } from '@solana/web3.js';
 
-export type WalletProvider = 'phantom' | 'solflare' | 'backpack' | 'trustwallet' | 'atomic' | 'metamask';
+export type WalletProvider = 'phantom' | 'solflare' | 'backpack' | 'trustwallet' | 'atomic' | 'metamask' | 'glow';
 
 export interface WalletConnection {
   provider: any;
