@@ -94,31 +94,35 @@ if (type === 'glow') {
 
 if (type === 'atomic') {
   try {
-    // Vérifier si l'extension est déjà disponible
-    if (window.atomic?.solana) {
-      const provider = window.atomic.solana;
-      await provider.connect();
-      return provider;
+    let attempts = 0;
+    let provider = null;
+
+    while (!provider && attempts < 50) {
+      provider = window.atomic?.solana || window.atomicwallet?.solana;
+      if (!provider) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
     }
 
-    // Vérifier la version Web3
-    if (window.atomicwallet?.solana) {
-      const provider = window.atomicwallet.solana;
-      await provider.connect();
-      return provider;
+    if (provider) {
+      const connectedProvider = await provider.connect();
+      return connectedProvider || provider;
     }
 
-    // Deep linking pour desktop
-    const url = encodeURIComponent(window.location.href);
-    window.location.href = `atomic://dapp/connect?url=${url}`;
+    if (!window.atomic) {
+      const protocolCheck = "atomic:" + window.location.href;
+      window.location.href = protocolCheck;
+      return null;
+    }
+
+    window.open('https://atomicwallet.io/download', '_blank');
     return null;
   } catch (error) {
     console.error('Atomic error:', error);
-    window.open('https://atomicwallet.io/download', '_blank');
     return null;
   }
 }
-  
   if (type === 'backpack') {
     try {
       let attempts = 0;
