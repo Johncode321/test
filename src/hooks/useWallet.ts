@@ -8,82 +8,82 @@ const isBackpackBrowser = () => navigator.userAgent.toLowerCase().includes('back
 const isTrustWalletBrowser = () => navigator.userAgent.toLowerCase().includes('trust');
 const isAtomicBrowser = () => navigator.userAgent.toLowerCase().includes('atomicwallet');
 const isMetaMaskBrowser = () => navigator.userAgent.toLowerCase().includes('metamask');
-const isInAppBrowser = () => isPhantomBrowser() || isSolflareBrowser() || isBackpackBrowser() || isTrustWalletBrowser() || isAtomicBrowser() || isMetaMaskBrowser();
+const isGlowBrowser = () => navigator.userAgent.toLowerCase().includes('glow');
+const isInAppBrowser = () => isPhantomBrowser() || isSolflareBrowser() || isBackpackBrowser() || 
+  isTrustWalletBrowser() || isAtomicBrowser() || isMetaMaskBrowser() || isGlowBrowser();
 
 const getProvider = async (type: WalletProvider) => {
   console.log(`Getting provider for ${type}`);
 
-
   if (type === 'glow') {
-  try {
-    let attempts = 0;
-    while (!window.glow?.solana && attempts < 50) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      attempts++;
-    }
-    if (window.glow?.solana) {
-      return window.glow.solana;
-    }
-    
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    if (isMobile) {
-      window.location.href = `https://glow.app/download`;
-    } else {
-      window.open('https://glow.app/download', '_blank');
-    }
-    return null;
-  } catch (error) {
-    console.error('Error getting Glow provider:', error);
-    return null;
-  }
-}
+    try {
+      if (window.glow?.solana) {
+        return window.glow.solana;
+      }
 
-if (type === 'metamask') {
-  try {
-    // Check if MetaMask exists
-    if (!window.ethereum?.isMetaMask) {
-      window.open('https://metamask.io/download/', '_blank');
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const url = encodeURIComponent(window.location.href);
+      if (isMobile) {
+        window.location.href = `https://glow.app/access?url=${url}`;
+      } else {
+        const response = await fetch('https://api.glow.app/api/web3/network/solana');
+        const { deepLink } = await response.json();
+        window.location.href = `${deepLink}?url=${url}`;
+      }
+      return null;
+    } catch (error) {
+      console.error('Glow provider error:', error);
+      window.open('https://glow.app/download', '_blank');
       return null;
     }
-
-    // Request account access
-    const accounts = await window.ethereum.request({
-      method: 'eth_requestAccounts'
-    });
-
-    if (!accounts || !accounts[0]) return null;
-
-    // Create a simple provider that mimics Solana wallet interface
-    const provider = {
-      publicKey: new PublicKey(accounts[0].slice(0, 32).padEnd(32, '0')),
-      signMessage: async (message) => {
-        const signature = await window.ethereum.request({
-          method: 'personal_sign',
-          params: [
-            '0x' + Buffer.from(message).toString('hex'),
-            accounts[0]
-          ]
-        });
-        return { signature: Buffer.from(signature.slice(2), 'hex') };
-      },
-      connect: async () => ({ publicKey: new PublicKey(accounts[0].slice(0, 32).padEnd(32, '0')) }),
-      disconnect: async () => {},
-      on: (event, handler) => {
-        window.ethereum.on(event === 'connect' ? 'accountsChanged' : event, handler);
-        return provider;
-      },
-      removeListener: (event, handler) => {
-        window.ethereum.removeListener(event === 'connect' ? 'accountsChanged' : event, handler);
-        return provider;
-      }
-    };
-
-    return provider;
-  } catch (error) {
-    console.error('MetaMask error:', error);
-    return null;
   }
-}
+
+  if (type === 'metamask') {
+    try {
+      if (!window.ethereum?.isMetaMask) {
+        window.open('https://metamask.io/download/', '_blank');
+        return null;
+      }
+
+      try {
+        const accounts = await window.ethereum.request({
+          method: 'eth_requestAccounts'
+        });
+
+        if (!accounts?.[0]) return null;
+
+        const provider = {
+          publicKey: new PublicKey(accounts[0].slice(0, 32).padEnd(32, '0')),
+          signMessage: async (message) => {
+            const msgHex = '0x' + Buffer.from(message).toString('hex');
+            const signature = await window.ethereum.request({
+              method: 'personal_sign',
+              params: [msgHex, accounts[0]]
+            });
+            return { signature: Buffer.from(signature.slice(2), 'hex') };
+          },
+          connect: async () => ({ publicKey: new PublicKey(accounts[0].slice(0, 32).padEnd(32, '0')) }),
+          disconnect: async () => {},
+          on: (event, handler) => {
+            window.ethereum.on(event === 'connect' ? 'accountsChanged' : event, handler);
+            return provider;
+          },
+          removeListener: (event, handler) => {
+            window.ethereum.removeListener(event === 'connect' ? 'accountsChanged' : event, handler);
+            return provider;
+          }
+        };
+
+        return provider;
+      } catch (error) {
+        console.error('MetaMask connection error:', error);
+        return null;
+      }
+    } catch (error) {
+      console.error('MetaMask error:', error);
+      return null;
+    }
+  }
 
 
 if (type === 'atomic') {
