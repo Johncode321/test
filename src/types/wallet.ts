@@ -7,3 +7,10 @@ export interface WalletConnection {
   publicKey: PublicKey | null;
   providerType: WalletProvider | null;
 }
+
+export interface MetaMaskProvider {
+  isMetaMask: boolean;
+  request: (args: { method: string; params?: any[] }) => Promise<any>;
+  on: (event: string, handler: (result: any) => void) => void;
+  removeListener: (event: string, handler: (result: any) => void) => void;
+}
