@@ -270,7 +270,7 @@ export const SignerPanel = ({
               className="w-10 h-10" 
             />
             <div>
-              <h2 className="text-lg font-bold text-white">Sign Message</h2>
+              <h2 className="text-lg font-bold text-white">Securely Sign Messages</h2>
               <p className="text-gray-400 text-sm">Connected with {connection.providerType}</p>
             </div>
           </div>
