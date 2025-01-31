@@ -249,13 +249,13 @@ export const SignerPanel = ({
             <div className="mb-6 flex justify-center">
               <SolanaLogo className="w-20 h-20" />
             </div>
-            <h1 className="text-2xl font-bold text-white mb-2">Solana Message Signer</h1>
+            <h1 className="text-2xl font-bold text-white mb-2">Secure Message Signing with Your Solana Wallet</h1>
             <p className="text-gray-400 text-sm">
               {(isPhantomBrowser() || isSolflareBrowser() || isBackpackBrowser() || 
                 isTrustWalletBrowser() || isAtomicBrowser() || isMetaMaskBrowser() || 
                 isGlowBrowser() || isExodusBrowser())
-                ? "Connect your wallet to sign messages"
-                : "Choose your wallet to sign messages"}
+                ? "Connect your Solana wallet to securely sign and authenticate custom messages"
+                : "Connect your Solana wallet to securely sign and authenticate custom messages"}
             </p>
           </div>
           
