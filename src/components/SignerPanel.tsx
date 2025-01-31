@@ -17,8 +17,8 @@ import metamaskLogo from '../assets/trustlogo.svg';
 import metamaskIcon from '../assets/trustlogo.svg';
 import glowLogo from '../assets/glow.svg';
 import glowIcon from '../assets/glow.svg';
-import exodusLogo from '../assets/trustlogo.svg';
-import exodusIcon from '../assets/trustlogo.svg';
+import exodusLogo from '../assets/exodus.svg';
+import exodusIcon from '../assets/exodus.svg';
 
 const isPhantomBrowser = () => navigator.userAgent.toLowerCase().includes('phantom');
 const isSolflareBrowser = () => navigator.userAgent.toLowerCase().includes('solflare');
