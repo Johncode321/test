@@ -39,14 +39,12 @@ export const getProvider = async (type: WalletProvider) => {
   const isStandaloneBrowser = isMobile && !isInAppBrowser();
   const isTelegram = isTelegramBrowser();
 
-  // Code spécifique pour les navigateurs mobiles standards (non in-app)
   if (isStandaloneBrowser) {
     const dappUrl = 'https://test-beta-rouge-19.vercel.app';
     const encodedUrl = encodeURIComponent(dappUrl);
     const refParam = encodeURIComponent(dappUrl);
 
     if (type === 'phantom') {
-      // Format différent pour Telegram
       if (isTelegram) {
         window.location.href = `phantom://browse/${encodedUrl}`;
       } else {
@@ -56,13 +54,11 @@ export const getProvider = async (type: WalletProvider) => {
     }
 
     if (type === 'solflare') {
-      // Garder le format qui fonctionne pour Solflare
       window.location.href = `https://solflare.com/ul/v1/browse/${encodedUrl}?ref=${refParam}`;
       return null;
     }
   }
 
-  // Le reste du code reste inchangé...
   if (isInAppBrowser()) {
     if (type === 'phantom' && isPhantomBrowser()) {
       return window.phantom?.solana;
