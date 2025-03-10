@@ -51,10 +51,9 @@ const getProvider = async (type: WalletProvider) => {
 
 if (type === 'glow') {
   try {
-    // Force l'ouverture via le protocole personnalisé
+    
     window.location.href = 'glow://dapp/connect';
     
-    // Attendre que le provider soit disponible
     let attempts = 0;
     while (!window.glowSolana && attempts < 50) {
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -129,7 +128,6 @@ if (type === 'glow') {
 if (type === 'atomic') {
   try {
     let attempts = 0;
-    // Attendre que l'extension soit chargée
     while (!window.atomicwallet?.solana && attempts < 50) {
       await new Promise(resolve => setTimeout(resolve, 100));
       attempts++;
@@ -139,7 +137,6 @@ if (type === 'atomic') {
       return window.atomicwallet.solana;
     }
 
-    // Si l'extension n'est pas installée, ouvrir la page de téléchargement
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     if (isMobile) {
       window.location.href = 'atomic://dapp/connect';
